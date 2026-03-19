@@ -1,10 +1,13 @@
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
+import { getUserFromRequest } from "@/lib/auth";
 
 export async function PUT(req: Request) {
     try {
         await connectDB();
+
+        const decoded: any = getUserFromRequest(req);
 
         const { userId, name, password, pin } = await req.json();
 
@@ -21,7 +24,7 @@ export async function PUT(req: Request) {
         }
 
         const updatedUser = await User.findByIdAndUpdate(
-            userId,
+            decoded.userId,
             updateData,
             { new: true }
         );

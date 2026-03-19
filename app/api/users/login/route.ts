@@ -1,7 +1,8 @@
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
-import { stat } from "fs";
+import { signToken } from "@/lib/jwt";
+import { sign } from "crypto";
 
 export async function POST(req: Request) {
     try {
@@ -19,7 +20,16 @@ export async function POST(req: Request) {
             return Response.json({ error: "Invalid credentials" }, { status: 401 });
         }
 
-        return Response.json({ message: "Login successful", user });
+        const token = signToken({
+            userId: user._id,
+            email: user.email
+        });
+
+        return Response.json({ 
+            message: "Login successful", 
+            token,
+            user 
+        });
     } catch (error) {
         return Response.json({ error: "Login failed" }, { status: 500 });
     }
