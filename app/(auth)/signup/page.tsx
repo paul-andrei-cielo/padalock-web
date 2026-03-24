@@ -101,7 +101,7 @@ export default function SignupPage() {
                   onChange={handleInputChange}
                   required
                   placeholder="Your name"
-                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-[#e33e70]"
+                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
                   disabled={isLoading}
                 />
               </div>
@@ -120,7 +120,7 @@ export default function SignupPage() {
                   onChange={handleInputChange}
                   required
                   placeholder="user@example.com"
-                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-[#e33e70]"
+                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
                   disabled={isLoading}
                 />
               </div>
@@ -139,7 +139,7 @@ export default function SignupPage() {
                   onChange={handleInputChange}
                   required
                   placeholder="Your password"
-                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-[#e33e70]"
+                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
                   disabled={isLoading}
                 />
               </div>
@@ -148,7 +148,7 @@ export default function SignupPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="h-12 min-w-[190px] rounded-full bg-[#e33e70] px-8 text-lg font-bold text-white transition hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                  className="h-12 min-w-[190px] rounded-full bg-[#db416a] px-8 text-lg font-bold text-white transition hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
                 >
                   {isLoading ? (
                     <>
@@ -161,7 +161,7 @@ export default function SignupPage() {
                 </button>
               </div>
 
-              <p className="mt-4 text-center text-sm text-[#e34774]">
+              <p className="mt-4 text-center text-sm text-[#db416a]">
                 Already have an account?{" "}
                 <Link href="/login" className="font-bold hover:underline">
                   Login

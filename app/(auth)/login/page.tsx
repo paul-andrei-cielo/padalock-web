@@ -91,7 +91,7 @@ export default function Home() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="user@example.com"
                   required
-                  className="h-14 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-lg text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-[#e33e70]"
+                  className="h-14 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-lg text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
                 />
               </div>
 
@@ -109,9 +109,9 @@ export default function Home() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Your password"
                   required
-                  className="h-14 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-lg text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-[#e33e70]"
+                  className="h-14 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-lg text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
                 />
-                <p className="mt-2 text-center text-sm text-[#e34774]">
+                <p className="mt-2 text-center text-sm text-[#db416a]">
                   <Link href="/forgot-password" className="hover:underline">
                     Forgot password?
                   </Link>
@@ -119,7 +119,7 @@ export default function Home() {
               </div>
 
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <p className="text-base text-[#e34774]">
+                <p className="text-base text-[#db416a]">
                   Don&apos;t have an account?{" "}
                   <Link href="/signup" className="font-bold hover:underline">
                     Sign up
@@ -129,7 +129,7 @@ export default function Home() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="h-12 min-w-[150px] rounded-full bg-[#e33e70] px-6 text-lg font-bold text-white transition hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
+                  className="h-12 min-w-[150px] rounded-full bg-[#db416a] px-6 text-lg font-bold text-white transition hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
                 >
                   {loading ? (
                     <>
