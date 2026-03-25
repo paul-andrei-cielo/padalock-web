@@ -1,8 +1,9 @@
 import { connectDB } from "@/lib/mongodb";
 import Parcel from "@/models/Parcel";
 import { getUserFromRequest } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
     try {
         await connectDB();
 
@@ -19,11 +20,11 @@ export async function PUT(req: Request) {
             }
         );
 
-        return Response.json({
+        return NextResponse.json({
             message: "Parcels retrieved",
             updated
         });
     } catch (error) {
-        return Response.json({ error: "Unauthorized", }, { status: 401} );
+        return NextResponse.json({ error: "Unauthorized", }, { status: 401} );
     }
 }
