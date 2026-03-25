@@ -1,5 +1,17 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState, useEffect } from "react";
+
+interface Parcel {
+  _id: string;
+  trackingNumber: string;
+  parcelName: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 const navItems = [
   { label: "REGISTER", href: "/register" },
@@ -8,30 +20,159 @@ const navItems = [
   { label: "ACCOUNT", href: "/account" },
 ];
 
-const trackingItems = [
-  {
-    code: "PH5326...245G",
-    date: "Registered: March 10, 2026 | 13:30",
-    status: "Delivered",
-    statusClass: "bg-[#b8d8c7] text-[#0d7a43]",
-  },
-  {
-    code: "JT2516...1222",
-    date: "Registered: March 10, 2026 | 15:20",
-    status: "Pending",
-    statusClass: "bg-[#edd9cb] text-[#d46800]",
-  },
-  {
-    code: "PH2156...521G",
-    date: "Registered: March 10, 2026 | 15:20",
-    status: "Retrieved",
-    statusClass: "bg-[#cfe8ec] text-[#1383a3]",
-  },
-];
-
 const filterTabs = ["All", "Pending", "Delivered", "Retrieved"];
+const statusColors: Record<string, { bg: string; text: string }> = {
+  PENDING: { bg: "bg-[#edd9cb]", text: "text-[#d46800]" },
+  DELIVERED: { bg: "bg-[#b8d8c7]", text: "text-[#0d7a43]" },
+  RETRIEVED: { bg: "bg-[#cfe8ec]", text: "text-[#1383a3]" },
+};
+
+const API_BASE = "/api/parcels";
 
 export default function RegisterPage() {
+  const [parcels, setParcels] = useState<Parcel[]>([]);
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [parcelName, setParcelName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [activeFilter, setActiveFilter] = useState("All");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetchParcels();
+  }, []);
+
+  const fetchParcels = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError("No authentication token found");
+        setParcels([]);
+        return;
+      }
+
+      const res = await fetch(API_BASE, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+          return;
+        }
+        throw new Error(errorData.error || "Failed to fetch parcels");
+      }
+      
+      const data = await res.json();
+      setParcels(Array.isArray(data) ? data : []);
+      setError(""); 
+    } catch (err: any) {
+      console.error("Error fetching parcels:", err);
+      setError(err.message || "Failed to load parcels");
+      setParcels([]); 
+    } finally {
+      setLoading(false)
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!trackingNumber.trim()) {
+      setError("Please enter a tracking number");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          trackingNumber: trackingNumber.trim(),
+          parcelName: parcelName.trim() || "Parcel",
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to register parcel");
+      }
+
+      setTrackingNumber("");
+      setParcelName("");
+      await fetchParcels(); 
+    } catch (err: any) {
+      console.error("Error registering parcel:", err);
+      setError(err.message || "Failed to register parcel");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (parcelId: string, trackingNumber: string) => {
+    if (!confirm(`Delete ${trackingNumber}?`)) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/${parcelId}`, {
+        method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error("Failed to delete parcel");
+      }
+
+      await fetchParcels(); 
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete parcel");
+      await fetchParcels(); 
+    }
+  };
+
+  const filteredParcels = parcels.filter((parcel) => {
+    if (activeFilter === "All") return true;
+    return parcel.status === activeFilter.toUpperCase();
+  });
+
+  const getStatusDisplay = (status: string) => {
+    const normalizedStatus = status.toUpperCase();
+    return normalizedStatus === "PENDING" ? "Pending" :
+           normalizedStatus === "DELIVERED" ? "Delivered" :
+           normalizedStatus === "RETRIEVED" ? "Retrieved" : status;
+  };
+
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "Date unavailable";
+      
+      return `Registered: ${date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      })} | ${date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      })}`;
+    } catch {
+      return "Date unavailable";
+    }
+  };
+
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
       <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
@@ -75,13 +216,20 @@ export default function RegisterPage() {
               will appear in the list with Pending Status.
             </p>
 
+            {error && (
+              <div className="mt-3 rounded-lg bg-red-400/50 p-3 text-sm text-white">
+                {error}
+              </div>
+            )}
+
             <div className="mt-4 flex rounded-full bg-white/40 p-1.5">
-              {filterTabs.map((tab, index) => (
+              {filterTabs.map((tab) => (
                 <button
                   key={tab}
                   type="button"
+                  onClick={() => setActiveFilter(tab)}
                   className={`flex-1 rounded-full px-3 py-2 text-xs font-bold transition md:text-base ${
-                    index === 0
+                    activeFilter === tab
                       ? "bg-[#de9aae] text-white"
                       : "text-[#de9aae] hover:bg-white/30"
                   }`}
@@ -91,46 +239,73 @@ export default function RegisterPage() {
               ))}
             </div>
 
-            <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
-              {trackingItems.map((item) => (
-                <div
-                  key={item.code}
-                  className="flex items-center justify-between rounded-[1.5rem] bg-white/45 px-4 py-4"
-                >
-                  <div className="min-w-0">
-                    <h3 className="truncate text-lg font-extrabold text-[#de9aae] md:text-2xl">
-                      {item.code}
-                    </h3>
-                    <p className="mt-1 text-xs text-[#de9aae] md:text-base">
-                      {item.date}
+            <div className="mt-4 flex min-h-0 flex-1 flex-col gap-3 overflow-auto">
+              {filteredParcels.length === 0 ? (
+                <div className="flex flex-1 items-center justify-center rounded-[1.5rem] bg-white/30 py-8 text-center">
+                  <div>
+                    <p className="text-lg font-bold text-[#de9aae] md:text-xl">
+                      No parcels {activeFilter !== "All" ? `with ${activeFilter.toLowerCase()} status` : ""} found
+                    </p>
+                    <p className="mt-2 text-sm text-[#dd9db0]">
+                      Register your first tracking number above
                     </p>
                   </div>
-
-                  <div className="ml-4 flex items-center gap-3 md:gap-4">
-                    <span
-                      className={`rounded-full px-4 py-2 text-sm font-extrabold md:px-5 md:text-lg ${item.statusClass}`}
-                    >
-                      {item.status}
-                    </span>
-
-                    <button
-                      type="button"
-                      className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
-                      aria-label={`Edit ${item.code}`}
-                    >
-                      ✎
-                    </button>
-
-                    <button
-                      type="button"
-                      className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
-                      aria-label={`Delete ${item.code}`}
-                    >
-                      🗑
-                    </button>
-                  </div>
                 </div>
-              ))}
+              ) : (
+                filteredParcels.map((parcel) => {
+                  const statusStyle = statusColors[parcel.status as keyof typeof statusColors] || { 
+                    bg: "bg-gray-400", 
+                    text: "text-gray-800" 
+                  };
+                  
+                  return (
+                    <div
+                      key={parcel._id}
+                      className="flex items-center justify-between rounded-[1.5rem] bg-white/45 px-4 py-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-lg font-extrabold text-[#de9aae] md:text-2xl">
+                          {parcel.trackingNumber}
+                        </h3>
+                        <div className="mt-1 text-xs text-[#de9aae] md:text-base">
+                          {parcel.parcelName !== "Parcel" && (
+                            <span className="block font-medium">{parcel.parcelName}</span>
+                          )}
+                          <span>{formatDate(parcel.createdAt)}</span>
+                        </div>
+                      </div>
+
+                      <div className="ml-4 flex items-center gap-3 md:gap-4">
+                        <span
+                          className={`rounded-full px-4 py-2 text-sm font-extrabold md:px-5 md:text-lg ${statusStyle.bg} ${statusStyle.text}`}
+                        >
+                          {getStatusDisplay(parcel.status)}
+                        </span>
+
+                        <button
+                          type="button"
+                          className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
+                          aria-label={`Edit ${parcel.trackingNumber}`}
+                          onClick={() => {
+                            // TODO: Implement edit functionality
+                          }}
+                        >
+                          ✎
+                        </button>
+
+                        <button
+                          type="button"
+                          className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
+                          aria-label={`Delete ${parcel.trackingNumber}`}
+                          onClick={() => handleDelete(parcel._id, parcel.trackingNumber)}
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -140,21 +315,37 @@ export default function RegisterPage() {
             </h2>
 
             <div className="mt-6">
-              <label className="mb-3 block text-base font-medium text-[#ffffff] md:text-lg">
+              <label className="mb-2 block text-base font-medium text-[#ffffff] md:text-lg">
                 Tracking number
               </label>
-
               <input
                 type="text"
-                placeholder="Enter your parcel’s tracking number"
+                placeholder="Enter your parcel's tracking number"
                 className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] md:h-14 md:text-base"
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+                disabled={loading}
+              />
+
+              <label className="mt-4 mb-2 block text-base font-medium text-[#ffffff] md:text-lg">
+                Parcel name (optional)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g., Birthday Gift, Documents"
+                className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] md:h-14 md:text-base"
+                value={parcelName}
+                onChange={(e) => setParcelName(e.target.value)}
+                disabled={loading}
               />
 
               <button
                 type="button"
-                className="mt-6 h-12 w-full rounded-full bg-[#df4473] px-6 text-lg font-extrabold text-white transition hover:scale-[1.01] md:h-14 md:text-xl"
+                onClick={handleRegister}
+                disabled={loading || !trackingNumber.trim()}
+                className="mt-6 h-12 w-full rounded-full bg-[#df4473] px-6 text-lg font-extrabold text-white transition hover:scale-[1.01] disabled:opacity-50 md:h-14 md:text-xl"
               >
-                Register
+                {loading ? "Registering..." : "Register"}
               </button>
             </div>
           </div>

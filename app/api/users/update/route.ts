@@ -2,8 +2,9 @@ import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { getUserFromRequest } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
     try {
         await connectDB();
 
@@ -29,8 +30,8 @@ export async function PUT(req: Request) {
             { new: true }
         );
 
-        return Response.json({ message: "User updated", user: updatedUser });
+        return NextResponse.json({ message: "User updated", user: updatedUser });
     } catch (error) {
-        return Response.json({ error: "Update failed" }, { status: 500 });
+        return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
 }

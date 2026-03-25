@@ -34,7 +34,7 @@ export default function Home() {
 
       localStorage.setItem('token', data.token);
       
-      router.push('/dashboard');
+      router.push('/home');
     } catch (err) {
       setError('Something went wrong. Please try again.');
     } finally {

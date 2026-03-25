@@ -1,26 +1,28 @@
 import { connectDB } from "@/lib/mongodb";
 import Parcel from "@/models/Parcel";
+import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     try {
         await connectDB();
 
-        const user: any = getUserFromRequest(req);
+        const user = getUserFromRequest(req);
+
 
         const parcels = await Parcel.find({ userId: user.userId });
 
-        return Response.json(parcels);
+        return NextResponse.json(parcels);
     } catch (error) {
-        return Response.json({ error: "Unauthorized" }, { status: 400 });
+        return NextResponse.json({ error: "Unauthorized" }, { status: 400 });
     }
 }
 
-export async function POST(req:Request) {
+export async function POST(req: NextRequest) {
     try {
         await connectDB();
 
-        const user: any = getUserFromRequest(req);
+        const user = getUserFromRequest(req);
         const { trackingNumber, parcelName } = await req.json();
 
         const parcel = await Parcel.create({
@@ -30,8 +32,8 @@ export async function POST(req:Request) {
             status: "PENDING"
         });
 
-        return Response.json(parcel);
+        return NextResponse.json(parcel);
     } catch (error) {
-        return Response.json({ error: "Failed to create parcel"}, { status: 500 });
+        return NextResponse.json({ error: "Failed to create parcel"}, { status: 500 });
     }
 }
