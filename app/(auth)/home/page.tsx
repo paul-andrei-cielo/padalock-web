@@ -1,5 +1,23 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+interface Parcel {
+  _id: string;
+  trackingNumber: string;
+  parcelName: string;
+  status: "PENDING" | "DELIVERED" | "RETRIEVED";
+  deliveryDate: string | null;
+  retrievedDate: string | null;
+}
+
+interface OverviewStats {
+  pending: number;
+  delivered: number;
+  retrieved: number;
+}
 
 const navItems = [
   { label: "REGISTER", href: "/register" },
@@ -9,11 +27,73 @@ const navItems = [
 ];
 
 export default function HomePage() {
+  const [stats, setStats] = useState<OverviewStats>({ pending: 0, delivered: 0, retrieved: 0 });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchOverviewStats();
+  }, []);
+
+  const fetchOverviewStats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+
+      if (!token) {
+        throw new Error('No authentication token found. Please log in.');
+      }
+
+      const response = await fetch('/api/parcels', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch parcels');
+      }
+
+      const parcels: Parcel[] = await response.json();
+      
+      const stats = parcels.reduce(
+        (acc, parcel) => {
+          switch (parcel.status) {
+            case 'PENDING':
+              acc.pending++;
+              break;
+            case 'DELIVERED':
+              acc.delivered++;
+              break;
+            case 'RETRIEVED':
+              acc.retrieved++;
+              break;
+          }
+          return acc;
+        },
+        { pending: 0, delivered: 0, retrieved: 0 } as OverviewStats
+      );
+
+      setStats(stats);
+    } catch (err) {
+      setError('Failed to load parcel stats');
+      console.error('Error fetching parcels:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatNumber = (num: number) => num.toString().padStart(2, '0');
+
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
       <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
 
-        {/* HEADER (UNCHANGED) */}
         <header className="rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Image
@@ -39,13 +119,10 @@ export default function HomePage() {
           </div>
         </header>
 
-        {/* MAIN CONTENT */}
         <section className="grid flex-1 gap-4 lg:grid-cols-[2.2fr_0.9fr]">
 
-          {/* LEFT SIDE */}
           <div className="flex flex-col gap-4">
 
-            {/* STATUS */}
             <div className="rounded-[2rem] bg-white/25 p-5 backdrop-blur-sm">
               <h2 className="mb-4 text-xl font-extrabold text-white md:text-2xl">
                 PadaBox Status
@@ -72,63 +149,67 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* OVERVIEW */}
             <div className="flex-1 rounded-[2rem] bg-white/25 p-5 backdrop-blur-sm">
-              <h2 className="mb-4 text-xl font-extrabold text-white md:text-2xl">
-                Overview
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-extrabold text-white md:text-2xl">
+                  Overview
+                </h2>
+                <button
+                  onClick={fetchOverviewStats}
+                  disabled={loading}
+                  className="rounded-full bg-white/30 px-4 py-2 text-sm font-bold text-white transition hover:bg-white/40 disabled:opacity-50 md:text-base"
+                >
+                  {loading ? "⟳" : "↻"}
+                </button>
+              </div>
 
-              <div className="grid h-[calc(100%-3rem)] gap-3 md:grid-cols-3">
-
-                {/* Pending */}
-                <div className="flex flex-col rounded-[1.5rem] bg-white/50 p-4">
-                  <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
-                    Pending
-                  </h3>
-
-                  <div className="flex flex-1 items-center justify-center">
-                    <p className="text-5xl font-light text-[#df4473] md:text-6xl lg:text-7xl">
-                      02
-                    </p>
-                  </div>
+              {error ? (
+                <div className="flex h-[calc(100%-3rem)] items-center justify-center rounded-[1.5rem] bg-white/30 p-6">
+                  <p className="text-center text-sm text-white/80">{error}</p>
                 </div>
-
-                {/* Delivered */}
-                <div className="flex flex-col rounded-[1.5rem] bg-white/50 p-4">
-                  <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
-                    Delivered
-                  </h3>
-
-                  <div className="flex flex-1 items-center justify-center">
-                    <p className="text-5xl font-light text-[#df4473] md:text-6xl lg:text-7xl">
-                      00
-                    </p>
+              ) : (
+                <div className="grid h-[calc(100%-3rem)] gap-3 md:grid-cols-3">
+                  <div className="flex flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02]">
+                    <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
+                      Pending
+                    </h3>
+                    <div className="flex flex-1 items-center justify-center">
+                      <p className="text-5xl font-light text-[#df4473] md:text-6xl lg:text-7xl">
+                        {formatNumber(stats.pending)}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {/* Retrieved */}
-                <div className="flex flex-col rounded-[1.5rem] bg-white/50 p-4">
-                  <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
-                    Retrieved
-                  </h3>
+                  <div className="flex flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02]">
+                    <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
+                      Delivered
+                    </h3>
+                    <div className="flex flex-1 items-center justify-center">
+                      <p className="text-5xl font-light text-[#df4473] md:text-6xl lg:text-7xl">
+                        {formatNumber(stats.delivered)}
+                      </p>
+                    </div>
+                  </div>
 
-                  <div className="flex flex-1 flex-col items-center justify-center">
-                    <p className="text-5xl font-light text-[#df4473] md:text-6xl lg:text-7xl">
-                      01
-                    </p>
-
-                    <div className="mt-2 flex w-full max-w-[120px] items-center justify-between rounded-full bg-white/50 px-3 py-1 text-xs text-[#df4473]">
-                      <span>Today</span>
-                      <span>˅</span>
+                  <div className="flex flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02]">
+                    <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
+                      Retrieved
+                    </h3>
+                    <div className="flex flex-1 flex-col items-center justify-center">
+                      <p className="text-5xl font-light text-[#df4473] md:text-6xl lg:text-7xl">
+                        {formatNumber(stats.retrieved)}
+                      </p>
+                      <div className="mt-2 flex w-full max-w-[120px] items-center justify-between rounded-full bg-white/50 px-3 py-1 text-xs text-[#df4473]">
+                        <span>Today</span>
+                        <span>˅</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-
-              </div>
+              )}
             </div>
           </div>
 
-          {/* RIGHT SIDE (RECENT) */}
           <aside className="flex flex-col rounded-[2rem] bg-white/25 p-5 backdrop-blur-sm">
             <h2 className="mb-4 text-xl font-extrabold text-white md:text-2xl">
               Recent
