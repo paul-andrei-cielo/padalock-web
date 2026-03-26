@@ -11,6 +11,8 @@ interface Parcel {
   status: string;
   createdAt: string;
   updatedAt: string;
+  deliveryDate?: string;
+  retrievedDate?: string;
 }
 
 const navItems = [
@@ -211,22 +213,29 @@ export default function RegisterPage() {
            normalizedStatus === "RETRIEVED" ? "Retrieved" : status;
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString) return "N/A";
+    
     try {
       const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "Date unavailable";
+      if (isNaN(date.getTime())) return "N/A";
       
-      return `Registered: ${date.toLocaleDateString('en-US', { 
+      return date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric', 
         year: 'numeric' 
-      })} | ${date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })}`;
+      });
     } catch {
-      return "Date unavailable";
+      return "N/A";
     }
+  };
+
+  const formatFullDateInfo = (parcel: Parcel): string => {
+    return `
+      <b>Created:</b> ${formatDate(parcel.createdAt)} | 
+      <b>Delivered:</b> ${formatDate(parcel.deliveryDate)} | 
+      <b>Retrieved:</b> ${formatDate(parcel.retrievedDate)}
+    `.trim();
   };
 
   return (
@@ -360,7 +369,12 @@ export default function RegisterPage() {
                               {parcel.parcelName !== "Parcel" && (
                                 <span className="block font-medium">{parcel.parcelName}</span>
                               )}
-                              <span>{formatDate(parcel.createdAt)}</span>
+                              <div 
+                                className="font-medium" 
+                                dangerouslySetInnerHTML={{ 
+                                  __html: formatFullDateInfo(parcel) 
+                                }} 
+                              />
                             </div>
                           </>
                         )}

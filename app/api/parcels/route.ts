@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
             trackingNumber,
             parcelName: parcelName || "Parcel",
             userId: user.userId,
-            status: "PENDING"
+            status: "PENDING",
+            deliveryDate: null,
+            retrievedDate: null
         });
 
         return NextResponse.json(parcel);

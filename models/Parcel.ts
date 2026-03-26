@@ -21,9 +21,16 @@ const ParcelSchema = new mongoose.Schema({
         enum: ["PENDING", "DELIVERED", "RETRIEVED"],
         default: "PENDING"
     },
-    deliveryDate: Date,
-    retrievedDate: Date,
-    createdAt: Date
+    deliveryDate: {
+        type: Date,
+        default: null
+    },
+    retrievedDate: {
+        type: Date,
+        default: null
+    }
+}, {
+    timestamps: true
 });
 
 export default mongoose.models.Parcel || mongoose.model("Parcel", ParcelSchema);
