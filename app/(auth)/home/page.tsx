@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Parcel {
   _id: string;
@@ -27,6 +28,8 @@ const navItems = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  
   const [stats, setStats] = useState<OverviewStats>({ pending: 0, delivered: 0, retrieved: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,9 +45,11 @@ export default function HomePage() {
       
       const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-      if (!token) {
-        throw new Error('No authentication token found. Please log in.');
-      }
+        if (!token) {
+            console.log("No token, redirecting to login...");
+            router.push("/login");
+            return;
+        }
 
       const response = await fetch('/api/parcels', {
         method: 'GET',
