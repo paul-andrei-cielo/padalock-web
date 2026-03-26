@@ -36,6 +36,10 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [error, setError] = useState("");
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTrackingNumber, setEditTrackingNumber] = useState("");
+  const [editParcelName, setEditParcelName] = useState("");
 
   useEffect(() => {
     fetchParcels();
@@ -115,6 +119,58 @@ export default function RegisterPage() {
       setError(err.message || "Failed to register parcel");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startEdit = (parcel: Parcel) => {
+    setEditingId(parcel._id);
+    setEditTrackingNumber(parcel.trackingNumber);
+    setEditParcelName(parcel.parcelName);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditTrackingNumber("");
+    setEditParcelName("");
+  };
+
+  const handleUpdate = async (parcelId: string) => {
+    if (!editTrackingNumber.trim()) {
+      setError("Please enter a tracking number");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE}/${parcelId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          trackingNumber: editTrackingNumber.trim(),
+          parcelName: editParcelName.trim() || "Parcel",
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to update parcel");
+      }
+
+      setParcels(prev => 
+        prev.map(p => 
+          p._id === parcelId 
+            ? { ...p, trackingNumber: editTrackingNumber.trim(), parcelName: editParcelName.trim() || "Parcel" }
+            : p
+        )
+      );
+      
+      cancelEdit();
+    } catch (err: any) {
+      console.error("Error updating parcel:", err);
+      setError(err.message || "Failed to update parcel");
     }
   };
 
@@ -258,21 +314,56 @@ export default function RegisterPage() {
                     text: "text-gray-800" 
                   };
                   
+                  const isEditing = editingId === parcel._id;
+
                   return (
                     <div
                       key={parcel._id}
                       className="flex items-center justify-between rounded-[1.5rem] bg-white/45 px-4 py-4"
                     >
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-lg font-extrabold text-[#de9aae] md:text-2xl">
-                          {parcel.trackingNumber}
-                        </h3>
-                        <div className="mt-1 text-xs text-[#de9aae] md:text-base">
-                          {parcel.parcelName !== "Parcel" && (
-                            <span className="block font-medium">{parcel.parcelName}</span>
-                          )}
-                          <span>{formatDate(parcel.createdAt)}</span>
-                        </div>
+                        {isEditing ? (
+                          <>
+                            <input
+                              type="text"
+                              value={editTrackingNumber}
+                              onChange={(e) => setEditTrackingNumber(e.target.value)}
+                              className="w-full truncate bg-transparent text-lg font-extrabold text-[#de9aae] outline-none md:text-2xl"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleUpdate(parcel._id);
+                                if (e.key === 'Escape') cancelEdit();
+                              }}
+                            />
+                            <div className="mt-1 text-xs text-[#de9aae] md:text-base">
+                              {editParcelName !== "Parcel" && (
+                                <input
+                                  type="text"
+                                  value={editParcelName}
+                                  onChange={(e) => setEditParcelName(e.target.value)}
+                                  className="block w-full bg-transparent font-medium outline-none"
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') handleUpdate(parcel._id);
+                                    if (e.key === 'Escape') cancelEdit();
+                                  }}
+                                />
+                              )}
+                              <span>{formatDate(parcel.createdAt)}</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <h3 className="truncate text-lg font-extrabold text-[#de9aae] md:text-2xl">
+                              {parcel.trackingNumber}
+                            </h3>
+                            <div className="mt-1 text-xs text-[#de9aae] md:text-base">
+                              {parcel.parcelName !== "Parcel" && (
+                                <span className="block font-medium">{parcel.parcelName}</span>
+                              )}
+                              <span>{formatDate(parcel.createdAt)}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       <div className="ml-4 flex items-center gap-3 md:gap-4">
@@ -282,25 +373,45 @@ export default function RegisterPage() {
                           {getStatusDisplay(parcel.status)}
                         </span>
 
-                        <button
-                          type="button"
-                          className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
-                          aria-label={`Edit ${parcel.trackingNumber}`}
-                          onClick={() => {
-                            // TODO: Implement edit functionality
-                          }}
-                        >
-                          ✎
-                        </button>
-
-                        <button
-                          type="button"
-                          className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
-                          aria-label={`Delete ${parcel.trackingNumber}`}
-                          onClick={() => handleDelete(parcel._id, parcel.trackingNumber)}
-                        >
-                          🗑
-                        </button>
+                        {isEditing ? (
+                          <>
+                            <button
+                              type="button"
+                              className="text-lg text-green-600 transition hover:scale-110 hover:opacity-80 md:text-xl"
+                              aria-label="Save changes"
+                              onClick={() => handleUpdate(parcel._id)}
+                            >
+                              ✓
+                            </button>
+                            <button
+                              type="button"
+                              className="text-lg text-red-500 transition hover:scale-110 hover:opacity-80 md:text-xl"
+                              aria-label="Cancel edit"
+                              onClick={cancelEdit}
+                            >
+                              ✕
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
+                              aria-label={`Edit ${parcel.trackingNumber}`}
+                              onClick={() => startEdit(parcel)}
+                            >
+                              ✎
+                            </button>
+                            <button
+                              type="button"
+                              className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
+                              aria-label={`Delete ${parcel.trackingNumber}`}
+                              onClick={() => handleDelete(parcel._id, parcel.trackingNumber)}
+                            >
+                              🗑
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
