@@ -111,9 +111,9 @@ export default function ActivityPage() {
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-      <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-        <header className="rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto flex h-full w-full flex-col gap-4">
+        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <Image
               src="/padalock-logo.png"
               alt="PadaLock logo"
@@ -123,7 +123,7 @@ export default function ActivityPage() {
               priority
             />
 
-            <nav className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium text-white sm:text-sm md:text-base lg:gap-x-6 lg:text-lg">
+            <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
               {navItems.map((item) => {
                 const isActive = item.label === "ACTIVITY";
 
@@ -143,14 +143,14 @@ export default function ActivityPage() {
           </div>
         </header>
 
-        <section className="flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm md:p-6">
+        <section className="min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
           <div className="flex h-full min-h-0 flex-col">
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="mb-5 flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <h1 className="text-2xl font-extrabold text-white md:text-3xl">
                 Activity
               </h1>
 
-              <div className="flex w-full gap-3 md:w-auto md:min-w-[420px]">
+              <div className="flex w-full flex-wrap gap-3 lg:w-auto lg:min-w-[420px] lg:flex-nowrap">
                 <button
                   onClick={() => setViewMode("MAIN_ACTIVITY")}
                   className={`flex-1 rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
@@ -177,7 +177,7 @@ export default function ActivityPage() {
 
             {viewMode === "MAIN_ACTIVITY" ? (
               <>
-                <div className="mb-5 rounded-[1.75rem] bg-white/35 p-2">
+                <div className="mb-5 shrink-0 rounded-[1.75rem] bg-white/35 p-2">
                   <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                     {[
                       { label: "All", value: "ALL" },
@@ -206,12 +206,12 @@ export default function ActivityPage() {
                   </div>
                 </div>
 
-                <div className={`flex-1 min-h-0 overflow-y-auto pr-1 ${scrollbarClass}`}>
+                <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
                   <div className="flex flex-col gap-4">
                     {filteredActivities.map((item) => (
                       <div
                         key={item.id}
-                        className="flex flex-col gap-4 rounded-[1.75rem] bg-white/45 px-5 py-5 transition hover:bg-white/55 md:flex-row md:items-center md:justify-between"
+                        className="flex flex-col gap-4 rounded-[1.75rem] bg-white/45 px-5 py-5 transition hover:bg-white/55 lg:flex-row lg:items-center lg:justify-between"
                       >
                         <div className="min-w-0">
                           <h2 className="truncate text-xl font-extrabold text-[#df8daa] md:text-2xl">
@@ -251,23 +251,32 @@ export default function ActivityPage() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 min-h-0 pb-3">
+              <div className="min-h-0 flex-1 pb-3">
                 <div className="flex h-full min-h-0 flex-col rounded-[2rem] bg-white/20 p-3">
-                  <div className="mb-3 grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-[1.5rem] bg-white/35 px-5 py-4 text-sm font-extrabold uppercase tracking-wide text-[#de517e] md:px-6 md:text-base">
+                  <div className="mb-3 hidden shrink-0 grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-[1.5rem] bg-white/35 px-5 py-4 text-sm font-extrabold uppercase tracking-wide text-[#de517e] md:grid md:px-6 md:text-base">
                     <p>Date</p>
                     <p>Time</p>
                     <p>Event</p>
                   </div>
 
-                  <div className={`flex-1 min-h-0 space-y-3 overflow-y-auto pr-1 ${scrollbarClass}`}>
+                  <div className={`min-h-0 flex-1 space-y-3 overflow-y-auto pr-1 ${scrollbarClass}`}>
                     {auditLogs.map((log) => (
                       <div
                         key={log.id}
-                        className="grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-[1.5rem] bg-white/40 px-5 py-4 text-[#d96f92] shadow-[0_4px_16px_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:bg-white/50 md:px-6"
+                        className="rounded-[1.5rem] bg-white/40 px-4 py-4 text-[#d96f92] shadow-[0_4px_16px_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:bg-white/50 md:grid md:grid-cols-[1.1fr_0.75fr_2fr] md:gap-3 md:px-6"
                       >
-                        <p className="text-sm font-medium md:text-base">{log.date}</p>
-                        <p className="text-sm font-medium md:text-base">{log.time}</p>
-                        <p className="text-sm font-semibold md:text-base">{log.event}</p>
+                        <p className="text-sm font-medium md:text-base">
+                          <span className="mr-2 font-extrabold md:hidden">Date:</span>
+                          {log.date}
+                        </p>
+                        <p className="mt-1 text-sm font-medium md:mt-0 md:text-base">
+                          <span className="mr-2 font-extrabold md:hidden">Time:</span>
+                          {log.time}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold md:mt-0 md:text-base">
+                          <span className="mr-2 font-extrabold md:hidden">Event:</span>
+                          {log.event}
+                        </p>
                       </div>
                     ))}
                   </div>

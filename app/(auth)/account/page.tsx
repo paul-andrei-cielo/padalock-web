@@ -39,9 +39,9 @@ export default function AccountPage() {
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-      <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-        <header className="rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto flex h-full w-full flex-col gap-4">
+        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <Image
               src="/padalock-logo.png"
               alt="PadaLock logo"
@@ -51,7 +51,7 @@ export default function AccountPage() {
               priority
             />
 
-            <nav className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium text-white sm:text-sm md:text-base lg:gap-x-6 lg:text-lg">
+            <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
               {navItems.map((item) => {
                 const isActive = item.label === "ACCOUNT";
 
@@ -71,9 +71,9 @@ export default function AccountPage() {
           </div>
         </header>
 
-        <section className="flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm md:p-6">
+        <section className="min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
           <div className="flex h-full min-h-0 flex-col">
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="mb-5 flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <h1 className="text-2xl font-extrabold text-white md:text-3xl">
                 Account Settings
               </h1>
@@ -84,10 +84,10 @@ export default function AccountPage() {
               </button>
             </div>
 
-            <div className={`flex-1 min-h-0 overflow-y-auto pr-1 ${scrollbarClass}`}>
+            <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
               <div className="flex flex-col gap-4 pb-1">
                 <div className="rounded-[1.75rem] bg-white/45 p-4 md:p-5">
-                  <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#de517e] text-white">
                         <User className="h-5 w-5" />
@@ -103,7 +103,7 @@ export default function AccountPage() {
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1.4fr]">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.4fr]">
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-[#de517e] md:text-base">
                         First Name
@@ -122,11 +122,11 @@ export default function AccountPage() {
                       </div>
                     </div>
 
-                    <div>
+                    <div className="md:col-span-2 xl:col-span-1">
                       <label className="mb-2 block text-sm font-semibold text-[#de517e] md:text-base">
                         Email
                       </label>
-                      <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
+                      <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg break-all">
                         user@example.com
                       </div>
                     </div>
@@ -134,7 +134,7 @@ export default function AccountPage() {
                 </div>
 
                 <div className="rounded-[1.75rem] bg-white/45 p-4 md:p-5">
-                  <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#de517e] text-white">
                         <LockKeyhole className="h-5 w-5" />
@@ -152,12 +152,12 @@ export default function AccountPage() {
                           : "border-2 border-[#de517e] text-[#de517e] hover:bg-[#de517e] hover:text-white"
                       }`}
                     >
-                      {showChangePinCard ? "Update PIN" : "Save Changes"}
+                      {showChangePinCard ? "Save Changes" : "Update PIN"}
                     </button>
                   </div>
 
                   <div className="rounded-[1.5rem] bg-[#f3dfd0] px-4 py-4 md:px-5">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div className="min-w-0">
                         <h3 className="text-xl font-extrabold text-[#d46a1a] md:text-2xl">
                           Current PIN
@@ -167,7 +167,7 @@ export default function AccountPage() {
                         </p>
                       </div>
 
-                      <div className="relative w-full max-w-[320px]">
+                      <div className="relative w-full lg:max-w-[320px]">
                         <input
                           type={showCurrentPin ? "text" : "password"}
                           value="1234"
@@ -209,12 +209,12 @@ export default function AccountPage() {
                         </div>
 
                         <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
                               Enter current 4-digit PIN
                             </p>
 
-                            <div className="relative w-full md:w-[360px]">
+                            <div className="relative w-full lg:w-[360px]">
                               <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
                               <input
                                 type={showOldPin ? "text" : "password"}
@@ -245,12 +245,12 @@ export default function AccountPage() {
 
                         <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
                           <div className="flex flex-col gap-4">
-                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                               <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
                                 Send verification code to email
                               </p>
 
-                              <div className="relative w-full md:w-[360px]">
+                              <div className="relative w-full lg:w-[360px]">
                                 <Send className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
                                 <input
                                   type={showCode ? "text" : "password"}
@@ -271,15 +271,15 @@ export default function AccountPage() {
                                 </button>
                               </div>
                             </div>
+                          </div>
 
-                            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                              <button className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg">
-                                Send Code
-                              </button>
-                              <button className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg">
-                                Verify
-                              </button>
-                            </div>
+                          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            <button className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg">
+                              Send Code
+                            </button>
+                            <button className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg">
+                              Verify
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -290,12 +290,12 @@ export default function AccountPage() {
                         </div>
 
                         <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
                               Enter New PIN
                             </p>
 
-                            <div className="relative w-full md:w-[360px]">
+                            <div className="relative w-full lg:w-[360px]">
                               <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
                               <input
                                 type={showNewPin ? "text" : "password"}
@@ -325,12 +325,12 @@ export default function AccountPage() {
                         </div>
 
                         <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
                               Confirm New PIN
                             </p>
 
-                            <div className="relative w-full md:w-[360px]">
+                            <div className="relative w-full lg:w-[360px]">
                               <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
                               <input
                                 type={showConfirmPin ? "text" : "password"}
@@ -374,7 +374,7 @@ export default function AccountPage() {
                   </div>
 
                   <div className="rounded-[1.5rem] bg-white/70 px-4 py-4 md:px-5">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div>
                         <h3 className="text-xl font-extrabold text-[#ef1f1f] md:text-2xl">
                           Delete Account

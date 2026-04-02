@@ -100,9 +100,9 @@ export default function NotificationsPage() {
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-      <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-        <header className="rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto flex h-full w-full flex-col gap-4">
+        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <Image
               src="/padalock-logo.png"
               alt="PadaLock logo"
@@ -112,7 +112,7 @@ export default function NotificationsPage() {
               priority
             />
 
-            <nav className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium text-white sm:text-sm md:text-base lg:gap-x-6 lg:text-lg">
+            <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
               {navItems.map((item) => {
                 const isActive = item.label === "NOTIFICATIONS";
 
@@ -132,39 +132,39 @@ export default function NotificationsPage() {
           </div>
         </header>
 
-        <section className="flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm md:p-6">
+        <section className="min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
           <div className="flex h-full min-h-0 flex-col">
-            <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="mb-5 flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <h1 className="text-2xl font-extrabold text-white md:text-3xl">
                 Notifications
               </h1>
 
-              <div className="flex w-full flex-nowrap gap-3 md:w-auto md:min-w-[360px]">
+              <div className="flex w-full flex-nowrap gap-3 lg:w-auto lg:min-w-[360px]">
                 <button
-                    onClick={() => setShowUnreadOnly(false)}
-                    className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
+                  onClick={() => setShowUnreadOnly(false)}
+                  className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
                     !showUnreadOnly
-                        ? "bg-white text-[#de517e]"
-                        : "bg-[#de517e] text-white hover:opacity-90"
-                    }`}
+                      ? "bg-white text-[#de517e]"
+                      : "bg-[#de517e] text-white hover:opacity-90"
+                  }`}
                 >
-                    All Notifications
+                  All Notifications
                 </button>
 
                 <button
-                    onClick={() => setShowUnreadOnly(true)}
-                    className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
+                  onClick={() => setShowUnreadOnly(true)}
+                  className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
                     showUnreadOnly
-                        ? "bg-white text-[#de517e]"
-                        : "bg-[#de517e] text-white hover:opacity-90"
-                    }`}
+                      ? "bg-white text-[#de517e]"
+                      : "bg-[#de517e] text-white hover:opacity-90"
+                  }`}
                 >
-                    Unread
+                  Unread
                 </button>
               </div>
             </div>
 
-            <div className={`flex-1 min-h-0 overflow-y-auto pr-1 ${scrollbarClass}`}>
+            <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
               <div className="flex flex-col gap-4">
                 {filteredNotifications.map((item) => (
                   <div
@@ -174,7 +174,7 @@ export default function NotificationsPage() {
                     <div className="flex flex-col gap-3">
                       <div className="flex items-start justify-between gap-4">
                         <h2
-                          className={`text-2xl font-extrabold md:text-3xl ${titleStyles[item.type]}`}
+                          className={`text-xl font-extrabold md:text-2xl lg:text-3xl ${titleStyles[item.type]}`}
                         >
                           {item.title}
                         </h2>
@@ -184,11 +184,11 @@ export default function NotificationsPage() {
                         )}
                       </div>
 
-                      <p className="text-lg text-[#de517e] md:text-[1.05rem]">
+                      <p className="text-base text-[#de517e] md:text-[1.02rem] lg:text-[1.05rem]">
                         {item.message}
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-lg text-[#e08fa9] md:text-[1.05rem]">
+                      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-[#e08fa9] md:text-base lg:text-[1.05rem]">
                         <span>{item.date}</span>
                         <span>{item.time}</span>
                       </div>
