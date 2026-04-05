@@ -17,8 +17,28 @@ export async function POST(req: Request) {
         }
 
         const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            return Response.json({ error: "User already exists"}, { status: 400 });
+
+        if (existingUser && !existingUser.isDeleted) {
+        return Response.json({ error: "User already exists" }, { status: 400 });
+        }
+
+        if (existingUser && existingUser.isDeleted) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+
+            existingUser.firstName = firstName.trim();
+            existingUser.lastName = lastName.trim();
+            existingUser.password = hashedPassword;
+            existingUser.isDeleted = false;
+            existingUser.deletedAt = null;
+
+            await existingUser.save();
+
+            const { password: _, ...userResponse } = existingUser.toObject();
+
+            return Response.json({
+                message: "Account restored successfully",
+                user: userResponse,
+            });
         }
 
         const hashedPassword = await bcrypt.hash(password, 10);

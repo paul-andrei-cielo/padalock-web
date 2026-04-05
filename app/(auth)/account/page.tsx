@@ -41,7 +41,6 @@ interface UserProfile {
 }
 
 export default function AccountPage() {
-  // Profile states
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -51,7 +50,6 @@ export default function AccountPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // PIN change states (existing)
   const [showChangePinCard, setShowChangePinCard] = useState(false);
   const [showCurrentPin, setShowCurrentPin] = useState(false);
   const [showOldPin, setShowOldPin] = useState(false);
@@ -59,7 +57,6 @@ export default function AccountPage() {
   const [showNewPin, setShowNewPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
 
-  // Fetch user profile on mount
   useEffect(() => {
     fetchUserProfile();
   }, []);
@@ -67,7 +64,7 @@ export default function AccountPage() {
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token"); // Adjust based on your token storage
+      const token = localStorage.getItem("token"); 
       
       if (!token) {
         throw new Error("No authentication token found");
@@ -134,7 +131,6 @@ export default function AccountPage() {
       setEditMode(false);
       setSuccess("Profile updated successfully!");
       
-      // Auto-hide success message after 3 seconds
       setTimeout(() => setSuccess(""), 3000);
     } catch (err: any) {
       setError(err.message || "Failed to update profile");
@@ -152,6 +148,35 @@ export default function AccountPage() {
     setEditMode(false);
     setError("");
     setSuccess("");
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmDelete = confirm("Are you sure you want to delete your account? This cannot be undone.");
+    if (!confirmDelete) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("/api/users/profile", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Delete failed");
+      }
+
+      alert("Account deleted successfully");
+
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+    } catch (err: any) {
+      alert(err.message);
+    }
   };
 
   if (loading) {
@@ -586,7 +611,7 @@ export default function AccountPage() {
                         </p>
                       </div>
 
-                      <button className="inline-flex items-center justify-center rounded-full bg-[#ef1f1f] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg">
+                      <button onClick={handleDeleteAccount} className="inline-flex items-center justify-center rounded-full bg-[#ef1f1f] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg">
                         Delete Account
                       </button>
                     </div>

@@ -1,4 +1,3 @@
-// app/api/user/profile/route.ts
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
@@ -32,7 +31,6 @@ export async function PUT(req: NextRequest) {
 
     const { firstName, lastName } = await req.json();
 
-    // Validate required fields
     if (!firstName || firstName.trim() === "" || !lastName || lastName.trim() === "") {
       return NextResponse.json(
         { error: "First name and last name are required" }, 
@@ -64,5 +62,33 @@ export async function PUT(req: NextRequest) {
   } catch (error) {
     console.error("Profile update error:", error);
     return NextResponse.json({ error: "Update failed" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    await connectDB();
+
+    const decoded: any = getUserFromRequest(req);
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    if (user.isDeleted) {
+      return NextResponse.json({ error: "Account already deleted" }, { status: 400 });
+    }
+
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+
+    await user.save();
+
+    return NextResponse.json({ message: "Account deleted successfully" });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
   }
 }

@@ -25,9 +25,17 @@ const UserSchema = new mongoose.Schema({
     lockerId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Locker"
-    }
+    },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
+  deletedAt: {
+    type: Date,
+    default: null,
+  }
 }, {
-    timestamps: true
+  timestamps: true
 });
 
 export default mongoose.models.User || mongoose.model("User", UserSchema);
