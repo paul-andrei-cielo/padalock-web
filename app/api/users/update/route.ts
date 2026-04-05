@@ -10,11 +10,12 @@ export async function PUT(req: NextRequest) {
 
         const decoded: any = getUserFromRequest(req);
 
-        const { userId, name, password, pin } = await req.json();
+        const { firstName, lastName, password, pin } = await req.json();
 
         const updateData: any = {};
 
-        if (name) updateData.name = name;
+        if (firstName !== undefined) updateData.firstName = firstName;
+        if (lastName !== undefined) updateData.lastName = lastName;
 
         if (password) {
             updateData.password = await bcrypt.hash(password, 10);
@@ -27,11 +28,18 @@ export async function PUT(req: NextRequest) {
         const updatedUser = await User.findByIdAndUpdate(
             decoded.userId,
             updateData,
-            { new: true }
+            { new: true, runValidators: true }
         );
 
-        return NextResponse.json({ message: "User updated", user: updatedUser });
+        if (!updatedUser) {
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
+        }
+
+        const { password: _, ...userResponse } = updatedUser.toObject();
+
+        return NextResponse.json({ message: "User updated", user: userResponse });
     } catch (error) {
+        console.error("Update error:", error);
         return NextResponse.json({ error: "Update failed" }, { status: 500 });
     }
 }

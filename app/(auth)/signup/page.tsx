@@ -30,22 +30,46 @@ export default function SignupPage() {
     e.preventDefault();
     setError("");
 
+    if (!formData.firstName.trim()) {
+      setError("First name is required");
+      return;
+    }
+    if (!formData.lastName.trim()) {
+      setError("Last name is required");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setError("Please enter a valid email address");
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/users/register/", {
+      const response = await fetch("/api/users/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: `${formData.firstName} ${formData.lastName}`,
-          email: formData.email,
+          email: formData.email.trim(),
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
           password: formData.password,
         }),
       });
@@ -57,9 +81,16 @@ export default function SignupPage() {
         return;
       }
 
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
       router.push("/login");
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -70,14 +101,15 @@ export default function SignupPage() {
       ...prev,
       [e.target.id]: e.target.value,
     }));
+    setError("");
   };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f6f2f4] via-[#efc7d3] to-[#df4f7d] px-6 py-8 md:px-10 lg:px-16">
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-between gap-10">
-      <section className="flex-1 text-white">
-        <div className="mb-16 flex items-center gap-4">
-          <div className="mb-16">
+        {/* Left side: Logo and header */}
+        <section className="flex-1 text-white">
+          <div className="mb-16 flex items-center gap-4">
             <Image
               src="/padalock-logo.png"
               alt="PadaLock Logo"
@@ -87,17 +119,17 @@ export default function SignupPage() {
               priority
             />
           </div>
-        </div>
 
-        <div className="max-w-md">
-          <h2 className="text-4xl font-extrabold leading-[1.2] md:text-5xl">
-            Create an
-            <br />
-            account
-          </h2>
-        </div>
-      </section>
+          <div className="max-w-md">
+            <h2 className="text-4xl font-extrabold leading-[1.2] md:text-5xl">
+              Create an
+              <br />
+              account
+            </h2>
+          </div>
+        </section>
 
+        {/* Right side: Form */}
         <section className="flex w-full max-w-xl justify-center lg:justify-end">
           <div className="w-full rounded-[2rem] bg-[#f6e8ec]/50 p-8 shadow-[0_20px_60px_rgba(214,84,126,0.18)] backdrop-blur-sm md:p-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
@@ -113,7 +145,7 @@ export default function SignupPage() {
                     htmlFor="firstName"
                     className="mb-2 block text-lg font-medium text-[#e34774]"
                   >
-                    First Name
+                    First Name *
                   </label>
                   <input
                     id="firstName"
@@ -132,7 +164,7 @@ export default function SignupPage() {
                     htmlFor="lastName"
                     className="mb-2 block text-lg font-medium text-[#e34774]"
                   >
-                    Last Name
+                    Last Name *
                   </label>
                   <input
                     id="lastName"
@@ -152,7 +184,7 @@ export default function SignupPage() {
                   htmlFor="email"
                   className="mb-2 block text-lg font-medium text-[#e34774]"
                 >
-                  Email
+                  Email *
                 </label>
                 <input
                   id="email"
@@ -171,7 +203,7 @@ export default function SignupPage() {
                   htmlFor="password"
                   className="mb-2 block text-lg font-medium text-[#e34774]"
                 >
-                  Password
+                  Password *
                 </label>
                 <input
                   id="password"
@@ -196,7 +228,7 @@ export default function SignupPage() {
                   htmlFor="confirmPassword"
                   className="mb-2 block text-lg font-medium text-[#e34774]"
                 >
-                  Confirm Password
+                  Confirm Password *
                 </label>
                 <input
                   id="confirmPassword"
