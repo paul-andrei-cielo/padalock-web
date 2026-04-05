@@ -7,26 +7,70 @@ import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
+
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
+  const passwordsMatch =
+    formData.confirmPassword.length > 0 &&
+    formData.password === formData.confirmPassword;
+
+  const passwordsDoNotMatch =
+    formData.confirmPassword.length > 0 &&
+    formData.password !== formData.confirmPassword;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setError("");
 
+    if (!formData.firstName.trim()) {
+      setError("First name is required");
+      return;
+    }
+    if (!formData.lastName.trim()) {
+      setError("Last name is required");
+      return;
+    }
+    if (!formData.email.trim()) {
+      setError("Email is required");
+      return;
+    }
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      return;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setError("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      const response = await fetch("/api/users/register/", {
+      const response = await fetch("/api/users/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
       });
 
       const data = await response.json();
@@ -36,38 +80,45 @@ export default function SignupPage() {
         return;
       }
 
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
       router.push("/login");
-
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      setError("Registration failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [e.target.id]: e.target.value,
-    });
+    }));
+    setError("");
   };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#f6f2f4] via-[#efc7d3] to-[#df4f7d] px-6 py-8 md:px-10 lg:px-16">
-    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-between gap-10">
-      <section className="flex-1 text-white">
-        <div className="mb-16 flex items-center gap-4">
-          <div className="mb-16">
-            <Image
-              src="/padalock-logo.png"
-              alt="PadaLock Logo"
-              width={390}
-              height={90}
-              className="object-contain"
-              priority
-            />
+      <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center justify-between gap-10">
+        <section className="flex-1 text-white">
+          <div className="mb-16 flex items-center gap-4">
+            <div className="mb-16">
+              <Image
+                src="/padalock-logo.png"
+                alt="PadaLock Logo"
+                width={390}
+                height={90}
+                className="object-contain"
+                priority
+              />
+            </div>
           </div>
-        </div>
 
           <div className="max-w-md">
             <h2 className="text-4xl font-extrabold leading-[1.2] md:text-5xl">
@@ -82,28 +133,49 @@ export default function SignupPage() {
           <div className="w-full rounded-[2rem] bg-[#f6e8ec]/50 p-8 shadow-[0_20px_60px_rgba(214,84,126,0.18)] backdrop-blur-sm md:p-10">
             <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
-                <div className="rounded-full bg-red-100/80 border border-red-300 p-4 text-center text-sm text-red-700">
+                <div className="rounded-full border border-red-300 bg-red-100/80 p-4 text-center text-sm text-red-700">
                   {error}
                 </div>
               )}
 
-              <div>
-                <label
-                  htmlFor="name"
-                  className="mb-2 block text-lg font-medium text-[#e34774]"
-                >
-                  Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Your name"
-                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
-                  disabled={isLoading}
-                />
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="firstName"
+                    className="mb-2 block text-lg font-medium text-[#e34774]"
+                  >
+                    First Name *
+                  </label>
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="First name"
+                    className="h-12 w-full rounded-full bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="lastName"
+                    className="mb-2 block text-lg font-medium text-[#e34774]"
+                  >
+                    Last Name *
+                  </label>
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Last name"
+                    className="h-12 w-full rounded-full bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
+                    disabled={isLoading}
+                  />
+                </div>
               </div>
 
               <div>
@@ -111,7 +183,7 @@ export default function SignupPage() {
                   htmlFor="email"
                   className="mb-2 block text-lg font-medium text-[#e34774]"
                 >
-                  Email
+                  Email *
                 </label>
                 <input
                   id="email"
@@ -120,7 +192,7 @@ export default function SignupPage() {
                   onChange={handleInputChange}
                   required
                   placeholder="user@example.com"
-                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
+                  className="h-12 w-full rounded-full bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
                   disabled={isLoading}
                 />
               </div>
@@ -130,7 +202,7 @@ export default function SignupPage() {
                   htmlFor="password"
                   className="mb-2 block text-lg font-medium text-[#e34774]"
                 >
-                  Password
+                  Password *
                 </label>
                 <input
                   id="password"
@@ -139,16 +211,56 @@ export default function SignupPage() {
                   onChange={handleInputChange}
                   required
                   placeholder="Your password"
-                  className="h-12 w-full rounded-full border-none bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 focus:ring-[#e33e70]"
+                  className={`h-12 w-full rounded-full bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 ${
+                    passwordsDoNotMatch
+                      ? "ring-2 ring-red-400 focus:ring-red-500"
+                      : passwordsMatch
+                      ? "ring-2 ring-green-400 focus:ring-green-500"
+                      : "focus:ring-[#e33e70]"
+                  }`}
                   disabled={isLoading}
                 />
               </div>
 
-              <div className="flex justify-center pt-4">
+              <div>
+                <label
+                  htmlFor="confirmPassword"
+                  className="mb-2 block text-lg font-medium text-[#e34774]"
+                >
+                  Confirm Password *
+                </label>
+                <input
+                  id="confirmPassword"
+                  type="password"
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  required
+                  placeholder="Confirm your password"
+                  className={`h-12 w-full rounded-full bg-[#f8f4f5] px-6 text-base text-[#db416a] outline-none placeholder:text-[#e79baf] focus:ring-2 ${
+                    passwordsDoNotMatch
+                      ? "ring-2 ring-red-400 focus:ring-red-500"
+                      : passwordsMatch
+                      ? "ring-2 ring-green-400 focus:ring-green-500"
+                      : "focus:ring-[#e33e70]"
+                  }`}
+                  disabled={isLoading}
+                />
+
+                <div className="mt-2 min-h-[20px] px-2 text-sm">
+                  {passwordsDoNotMatch && (
+                    <p className="text-red-600">Passwords do not match</p>
+                  )}
+                  {passwordsMatch && (
+                    <p className="text-green-600">Passwords match</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-center pt-2">
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="h-12 min-w-[190px] rounded-full bg-[#db416a] px-8 text-lg font-bold text-white transition hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                  disabled={isLoading || passwordsDoNotMatch}
+                  className="flex h-12 min-w-[190px] items-center justify-center gap-2 rounded-full bg-[#db416a] px-8 text-lg font-bold text-white transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {isLoading ? (
                     <>

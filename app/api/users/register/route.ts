@@ -4,10 +4,17 @@ import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
     try {
-
         await connectDB();
 
-        const { name, email, password } = await req.json();
+        const body = await req.json();
+        
+        const { firstName, lastName, email, password } = body;
+        
+        if (!firstName || !lastName || !email || !password) {
+            return Response.json({ 
+                error: "Missing required fields: firstName, lastName, email, password" 
+            }, { status: 400 });
+        }
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -17,14 +24,17 @@ export async function POST(req: Request) {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = await User.create({
-            name,
-            email,
+            firstName: firstName.trim(),
+            lastName: lastName.trim(),
+            email: email.trim(),
             password: hashedPassword
         });
 
-        return Response.json({ message: "User registered", user: newUser });
+        const { password: _, ...userResponse } = newUser.toObject();
+        return Response.json({ message: "User registered", user: userResponse });
 
     } catch (error) {
+        console.error("Registration error:", error);
         return Response.json({ error: "Registration failed" }, { status: 500 });
     }
 }
