@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   User,
   Pencil,
@@ -12,6 +12,9 @@ import {
   LogOut,
   Send,
   Trash2,
+  Check,
+  X,
+  Loader2,
 } from "lucide-react";
 
 const navItems = [
@@ -29,7 +32,26 @@ const scrollbarClass =
   "[&::-webkit-scrollbar-thumb]:rounded-full " +
   "hover:[&::-webkit-scrollbar-thumb]:bg-[#cf6c91]";
 
+interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  pin?: string;
+  lockerId?: string;
+}
+
 export default function AccountPage() {
+  // Profile states
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // PIN change states (existing)
   const [showChangePinCard, setShowChangePinCard] = useState(false);
   const [showCurrentPin, setShowCurrentPin] = useState(false);
   const [showOldPin, setShowOldPin] = useState(false);
@@ -37,10 +59,116 @@ export default function AccountPage() {
   const [showNewPin, setShowNewPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
 
+  // Fetch user profile on mount
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token"); // Adjust based on your token storage
+      
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await fetch("/api/users/profile", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch profile");
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      setFirstName(data.user.firstName);
+      setLastName(data.user.lastName);
+      setError("");
+      setSuccess("");
+    } catch (err: any) {
+      setError(err.message || "Failed to load profile");
+      console.error("Profile fetch error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("First name and last name are required");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setError("");
+      setSuccess("");
+
+      const token = localStorage.getItem("token");
+      
+      const response = await fetch("/api/users/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update profile");
+      }
+
+      const data = await response.json();
+      setUser(data.user);
+      setEditMode(false);
+      setSuccess("Profile updated successfully!");
+      
+      // Auto-hide success message after 3 seconds
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err: any) {
+      setError(err.message || "Failed to update profile");
+      console.error("Profile update error:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (user) {
+      setFirstName(user.firstName);
+      setLastName(user.lastName);
+    }
+    setEditMode(false);
+    setError("");
+    setSuccess("");
+  };
+
+  if (loading) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="flex items-center gap-2 text-white text-xl">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          Loading profile...
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
       <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-        <header className="rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+        <header className="rounded-[1.75rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <Image
               src="/padalock-logo.png"
@@ -54,7 +182,6 @@ export default function AccountPage() {
             <nav className="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium text-white sm:text-sm md:text-base lg:gap-x-6 lg:text-lg">
               {navItems.map((item) => {
                 const isActive = item.label === "ACCOUNT";
-
                 return (
                   <Link
                     key={item.label}
@@ -86,6 +213,7 @@ export default function AccountPage() {
 
             <div className={`flex-1 min-h-0 overflow-y-auto pr-1 ${scrollbarClass}`}>
               <div className="flex flex-col gap-4 pb-1">
+                {/* Profile Information Section - FULLY FUNCTIONAL */}
                 <div className="rounded-[1.75rem] bg-white/45 p-4 md:p-5">
                   <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3">
@@ -97,29 +225,100 @@ export default function AccountPage() {
                       </h2>
                     </div>
 
-                    <button className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#de517e] px-5 py-2 text-sm font-extrabold text-[#de517e] transition hover:bg-[#de517e] hover:text-white md:text-base">
-                      <Pencil className="h-4 w-4" />
-                      Edit Profile
-                    </button>
+                    {!editMode ? (
+                      <button
+                        onClick={() => setEditMode(true)}
+                        className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#de517e] px-5 py-2 text-sm font-extrabold text-[#de517e] transition hover:bg-[#de517e] hover:text-white md:text-base"
+                      >
+                        <Pencil className="h-4 w-4" />
+                        Edit Profile
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleSaveProfile}
+                          disabled={saving || !firstName.trim() || !lastName.trim()}
+                          className="inline-flex items-center justify-center gap-2 rounded-full bg-[#de517e] px-5 py-2 text-sm font-extrabold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed md:text-base"
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin md:h-5 md:w-5" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Check className="h-4 w-4 md:h-5 md:w-5" />
+                              Save
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          disabled={saving}
+                          className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#de517e] px-5 py-2 text-sm font-extrabold text-[#de517e] transition hover:bg-[#de517e] hover:text-white disabled:opacity-50 md:text-base"
+                        >
+                          <X className="h-4 w-4 md:h-5 md:w-5" />
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
+
+                  {success && (
+                    <div className="mb-4 rounded-full bg-green-100/80 p-3 text-sm font-medium text-green-800 border border-green-200">
+                      {success}
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="mb-4 rounded-full bg-red-100/80 p-3 text-sm font-medium text-red-800 border border-red-200">
+                      {error}
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_1.4fr]">
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-[#de517e] md:text-base">
-                        First Name
+                        First Name <span className="text-red-400">*</span>
                       </label>
-                      <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
-                        Sophie Ella
-                      </div>
+                      {editMode ? (
+                        <input
+                          type="text"
+                          value={firstName}
+                          onChange={(e) => {
+                            setFirstName(e.target.value);
+                            setError("");
+                          }}
+                          className="w-full rounded-full bg-[#f7f7f7] px-5 py-3 text-base text-[#de517e] outline-none focus:border-2 focus:border-[#de517e] focus:ring-2 focus:ring-[#de517e]/20 focus:bg-white transition-all md:text-lg"
+                          placeholder="Enter first name"
+                        />
+                      ) : (
+                        <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
+                          {user?.firstName || "Loading..."}
+                        </div>
+                      )}
                     </div>
 
                     <div>
                       <label className="mb-2 block text-sm font-semibold text-[#de517e] md:text-base">
-                        Last Name
+                        Last Name <span className="text-red-400">*</span>
                       </label>
-                      <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
-                        Mausisa
-                      </div>
+                      {editMode ? (
+                        <input
+                          type="text"
+                          value={lastName}
+                          onChange={(e) => {
+                            setLastName(e.target.value);
+                            setError("");
+                          }}
+                          className="w-full rounded-full bg-[#f7f7f7] px-5 py-3 text-base text-[#de517e] outline-none focus:border-2 focus:border-[#de517e] focus:ring-2 focus:ring-[#de517e]/20 focus:bg-white transition-all md:text-lg"
+                          placeholder="Enter last name"
+                        />
+                      ) : (
+                        <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
+                          {user?.lastName || "Loading..."}
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -127,12 +326,13 @@ export default function AccountPage() {
                         Email
                       </label>
                       <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
-                        user@example.com
+                        {user?.email || "Loading..."}
                       </div>
                     </div>
                   </div>
                 </div>
 
+                {/* Locker PIN Section (unchanged) */}
                 <div className="rounded-[1.75rem] bg-white/45 p-4 md:p-5">
                   <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div className="flex items-center gap-3">
@@ -189,6 +389,7 @@ export default function AccountPage() {
                   </div>
                 </div>
 
+                {/* Change PIN Card (unchanged) */}
                 {showChangePinCard && (
                   <div className="rounded-[1.75rem] bg-[#e7b8c8]/85 p-4 md:p-5">
                     <div className="mb-5 flex items-center gap-3">
@@ -363,6 +564,7 @@ export default function AccountPage() {
                   </div>
                 )}
 
+                {/* Account Deletion Section (unchanged) */}
                 <div className="rounded-[1.75rem] bg-[#f28a92]/95 p-4 md:p-5">
                   <div className="mb-5 flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#ef1f1f]">
