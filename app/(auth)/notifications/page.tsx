@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type NotificationType = "DELIVERED" | "FAILED_PIN" | "RETRIEVED" | "GENERAL";
 
@@ -23,58 +23,6 @@ const navItems = [
   { label: "ACCOUNT", href: "/account" },
 ];
 
-const notificationsData: NotificationItem[] = [
-  {
-    id: "1",
-    title: "Parcel Delivered",
-    message: "Parcel 20260310001 has been delivered to your PadaBox",
-    date: "March 10, 2026",
-    time: "13:30",
-    type: "DELIVERED",
-    unread: true,
-  },
-  {
-    id: "2",
-    title: "Failed PIN Attempt",
-    message: "An incorrect PIN was entered on your PadaBox",
-    date: "March 10, 2026",
-    time: "13:30",
-    type: "FAILED_PIN",
-  },
-  {
-    id: "3",
-    title: "Parcel Retrieved",
-    message: "Parcel Tracking No. 20260310001 has been retrieved",
-    date: "March 10, 2026",
-    time: "13:30",
-    type: "RETRIEVED",
-  },
-  {
-    id: "4",
-    title: "Parcel Delivered",
-    message: "Parcel 20260309012 has been delivered to your PadaBox",
-    date: "March 09, 2026",
-    time: "17:10",
-    type: "DELIVERED",
-  },
-  {
-    id: "5",
-    title: "Parcel Retrieved",
-    message: "Parcel Tracking No. 20260309012 has been retrieved",
-    date: "March 09, 2026",
-    time: "18:05",
-    type: "RETRIEVED",
-  },
-  {
-    id: "6",
-    title: "Failed PIN Attempt",
-    message: "An incorrect PIN was entered on your PadaBox",
-    date: "March 08, 2026",
-    time: "09:42",
-    type: "FAILED_PIN",
-  },
-];
-
 const scrollbarClass =
   "[&::-webkit-scrollbar]:w-2.5 " +
   "[&::-webkit-scrollbar-track]:bg-[#f2d9e2] " +
@@ -91,12 +39,84 @@ const titleStyles: Record<NotificationType, string> = {
 };
 
 export default function NotificationsPage() {
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await fetch("/api/logs", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          const mappedNotifications: NotificationItem[] = data.map((log: any) => {
+            let type: NotificationType = "GENERAL";
+            let title = "Activity";
+            let message = log.details || "New activity recorded";
+
+            if (log.action === "PARCEL_DETECTED") {
+              type = "DELIVERED";
+              title = "Parcel Delivered";
+              message = "A parcel has been detected in your PadaBox";
+            } else if (log.action === "LID_OPENED") {
+              type = "RETRIEVED";
+              title = "Parcel Retrieved";
+              message = "You opened your PadaBox";
+            } else if (
+              (log.action === "PIN_ENTERED" && !log.success) ||
+              log.action === "PIN_LOCKOUT"
+            ) {
+              type = "FAILED_PIN";
+              title = "Failed PIN Attempt";
+              message = "An incorrect PIN was entered on your PadaBox";
+            }
+
+            const dateObj = new Date(log.timestamp);
+            const dateStr = dateObj.toLocaleDateString("en-US", {
+              month: "long",
+              day: "numeric",
+              year: "numeric",
+            });
+            const timeStr = dateObj.toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+
+            return {
+              id: log._id,
+              title,
+              message,
+              date: dateStr,
+              time: timeStr,
+              type,
+              unread: false,
+            };
+          });
+
+          setNotifications(mappedNotifications);
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   const filteredNotifications = useMemo(() => {
-    if (!showUnreadOnly) return notificationsData;
-    return notificationsData.filter((item) => item.unread);
-  }, [showUnreadOnly]);
+    if (!showUnreadOnly) return notifications;
+    return notifications.filter((item) => item.unread);
+  }, [showUnreadOnly, notifications]);
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
@@ -141,69 +161,77 @@ export default function NotificationsPage() {
 
               <div className="flex w-full flex-nowrap gap-3 md:w-auto md:min-w-[360px]">
                 <button
-                    onClick={() => setShowUnreadOnly(false)}
-                    className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
+                  onClick={() => setShowUnreadOnly(false)}
+                  className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
                     !showUnreadOnly
-                        ? "bg-white text-[#de517e]"
-                        : "bg-[#de517e] text-white hover:opacity-90"
-                    }`}
+                      ? "bg-white text-[#de517e]"
+                      : "bg-[#de517e] text-white hover:opacity-90"
+                  }`}
                 >
-                    All Notifications
+                  All Notifications
                 </button>
 
                 <button
-                    onClick={() => setShowUnreadOnly(true)}
-                    className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
+                  onClick={() => setShowUnreadOnly(true)}
+                  className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
                     showUnreadOnly
-                        ? "bg-white text-[#de517e]"
-                        : "bg-[#de517e] text-white hover:opacity-90"
-                    }`}
+                      ? "bg-white text-[#de517e]"
+                      : "bg-[#de517e] text-white hover:opacity-90"
+                  }`}
                 >
-                    Unread
+                  Unread
                 </button>
               </div>
             </div>
 
             <div className={`flex-1 min-h-0 overflow-y-auto pr-1 ${scrollbarClass}`}>
-              <div className="flex flex-col gap-4">
-                {filteredNotifications.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-[2rem] bg-white/35 px-5 py-5 backdrop-blur-sm transition hover:bg-white/45 md:px-8 md:py-7"
-                  >
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-start justify-between gap-4">
-                        <h2
-                          className={`text-2xl font-extrabold md:text-3xl ${titleStyles[item.type]}`}
-                        >
-                          {item.title}
-                        </h2>
+              {loading ? (
+                <div className="flex min-h-[220px] items-center justify-center">
+                  <p className="text-center text-base font-medium text-white md:text-lg">
+                    Loading...
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {filteredNotifications.map((item) => (
+                    <div
+                      key={item.id}
+                      className="rounded-[2rem] bg-white/35 px-5 py-5 backdrop-blur-sm transition hover:bg-white/45 md:px-8 md:py-7"
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-4">
+                          <h2
+                            className={`text-2xl font-extrabold md:text-3xl ${titleStyles[item.type]}`}
+                          >
+                            {item.title}
+                          </h2>
 
-                        {item.unread && (
-                          <span className="mt-1 inline-flex h-3 w-3 shrink-0 rounded-full bg-[#de517e]" />
-                        )}
-                      </div>
+                          {item.unread && (
+                            <span className="mt-1 inline-flex h-3 w-3 shrink-0 rounded-full bg-[#de517e]" />
+                          )}
+                        </div>
 
-                      <p className="text-lg text-[#de517e] md:text-[1.05rem]">
-                        {item.message}
-                      </p>
+                        <p className="text-lg text-[#de517e] md:text-[1.05rem]">
+                          {item.message}
+                        </p>
 
-                      <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-lg text-[#e08fa9] md:text-[1.05rem]">
-                        <span>{item.date}</span>
-                        <span>{item.time}</span>
+                        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-lg text-[#e08fa9] md:text-[1.05rem]">
+                          <span>{item.date}</span>
+                          <span>{item.time}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
 
-                {filteredNotifications.length === 0 && (
-                  <div className="flex min-h-[220px] items-center justify-center rounded-[2rem] bg-white/30 px-6 py-8">
-                    <p className="text-center text-base font-medium text-[#df8daa] md:text-lg">
-                      No notifications to show.
-                    </p>
-                  </div>
-                )}
-              </div>
+                  {filteredNotifications.length === 0 && (
+                    <div className="flex min-h-[220px] items-center justify-center rounded-[2rem] bg-white/30 px-6 py-8">
+                      <p className="text-center text-base font-medium text-[#df8daa] md:text-lg">
+                        No notifications to show.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </section>
