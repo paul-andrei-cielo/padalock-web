@@ -15,6 +15,7 @@ interface ActivityItem {
   date: string;
   time: string;
   hasClip: boolean;
+  clipUrl?: string;
   parcelName?: string;
 }
 
@@ -105,9 +106,12 @@ export default function ActivityPage() {
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  const [selectedClip, setSelectedClip] = useState<string | null>(null);
 
   useEffect(() => {
     fetchParcels();
+    fetchLogs(); 
   }, []);
 
   const fetchParcels = async () => {
@@ -257,7 +261,12 @@ export default function ActivityPage() {
         activityDate = parcel.retrievedDate;
       }
       
-      const hasClip = status === "DELIVERED" || status === "RETRIEVED";
+      const relatedLog = logs.find(
+        (log) => log.details?.includes(parcel.trackingNumber) && log.cameraRecording
+      );
+      
+      const hasClip = !!relatedLog;
+      const clipUrl = relatedLog?.cameraRecording;
       
       return {
         id: parcel._id,
@@ -266,10 +275,11 @@ export default function ActivityPage() {
         date: formatDate(activityDate),
         time: formatTime(activityDate),
         hasClip,
+        clipUrl, 
         parcelName: parcel.parcelName !== "Parcel" ? parcel.parcelName : undefined,
       };
     });
-  }, [parcels]);
+  }, [parcels, logs]); 
 
   const filteredActivities = useMemo(() => {
     if (activeFilter === "ALL") return activities;
@@ -311,6 +321,19 @@ export default function ActivityPage() {
         return `${action} by ${actor}`;
     }
   };
+
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedClip(null);
+      }
+    };
+
+    if (selectedClip) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [selectedClip]);
 
   if (loading) {
     return (
@@ -499,8 +522,11 @@ export default function ActivityPage() {
                             {statusStyles[item.status].label}
                           </span>
 
-                          {item.hasClip && (
-                            <button className="inline-flex min-w-[150px] items-center justify-center rounded-full bg-white/80 px-6 py-3 text-base font-extrabold text-[#1487a0] transition hover:bg-white md:min-w-[180px] md:text-lg">
+                          {item.hasClip && item.clipUrl && (
+                            <button
+                              onClick={() => setSelectedClip(item.clipUrl || null)}
+                              className="inline-flex min-w-[150px] items-center justify-center rounded-full bg-white/80 px-6 py-3 text-base font-extrabold text-[#1487a0] transition hover:bg-white md:min-w-[180px] md:text-lg"
+                            >
                               ▶ View Clip
                             </button>
                           )}
@@ -583,6 +609,36 @@ export default function ActivityPage() {
             )}
           </div>
         </section>
+
+        {selectedClip && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setSelectedClip(null)}>
+            <div 
+              className="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] relative" 
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedClip(null)}
+                className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-bold text-gray-800 shadow-lg transition hover:scale-110"
+                aria-label="Close video"
+              >
+                ✕
+              </button>
+
+              <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl">
+                <video
+                  src={selectedClip}
+                  controls
+                  autoPlay
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    console.error('Video error:', e);
+                    setSelectedClip(null);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
