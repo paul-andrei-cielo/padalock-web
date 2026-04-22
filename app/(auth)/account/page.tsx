@@ -18,6 +18,7 @@ import {
 const navItems = [
   { label: "REGISTER", href: "/register" },
   { label: "ACTIVITY", href: "/activity" },
+  { label: "NOTIFICATIONS", href: "/notifications" },
   { label: "ACCOUNT", href: "/account" },
 ];
 
@@ -48,7 +49,6 @@ export default function AccountPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState("");
 
-  // Locker state
   const [locker, setLocker] = useState<any>(null);
   const [lockerLoading, setLockerLoading] = useState(true);
 
@@ -59,7 +59,6 @@ export default function AccountPage() {
   const [showNewPin, setShowNewPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
 
-  // Change PIN state
   const [currentPin, setCurrentPin] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -67,7 +66,7 @@ export default function AccountPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [codeVerified, setCodeVerified] = useState(false);
   const [updatingPin, setUpdatingPin] = useState(false);
-  const [step, setStep] = useState(1); // 1: current PIN, 2: verification, 3: new PIN, 4: confirm
+  const [step, setStep] = useState(1); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -76,7 +75,6 @@ export default function AccountPage() {
     fetchData();
   }, []);
 
-  // Reset form when toggling change PIN card
   useEffect(() => {
     if (!showChangePinCard) {
       setStep(1);
@@ -144,7 +142,6 @@ export default function AccountPage() {
     return pin.toString().padStart(4, "0");
   };
 
-  // Change PIN handlers
   const handleVerifyCurrentPin = async () => {
     if (currentPin !== locker?.pin) {
       alert("Current PIN is incorrect");
