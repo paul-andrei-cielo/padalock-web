@@ -88,7 +88,6 @@ export default function ActivityPage() {
   const [error, setError] = useState("");
   const [selectedClip, setSelectedClip] = useState<string | null>(null);
 
-  // FETCH DATA
   useEffect(() => {
     fetchParcels();
     fetchLogs();
@@ -191,7 +190,6 @@ export default function ActivityPage() {
     return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
-  // ACTIVITY & AUDIT LOGS
   const activities: ActivityItem[] = useMemo(() => {
     return parcels.map((parcel) => {
       let activityDate = parcel.createdAt;
@@ -241,7 +239,6 @@ export default function ActivityPage() {
     })).slice(0, 20);
   }, [logs]);
 
-  // ESC KEY FOR VIDEO MODAL
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSelectedClip(null);
@@ -252,7 +249,6 @@ export default function ActivityPage() {
     }
   }, [selectedClip]);
 
-  // LOADING SCREEN
   if (loading) {
     return (
       <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
@@ -298,7 +294,6 @@ export default function ActivityPage() {
     );
   }
 
-  // MAIN PAGE RETURN
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
       <div className="mx-auto flex h-full w-full flex-col gap-4">
