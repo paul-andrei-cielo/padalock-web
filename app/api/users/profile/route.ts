@@ -10,6 +10,13 @@ export async function GET(req: NextRequest) {
 
     const decoded: any = getUserFromRequest(req);
 
+    if (!decoded) {
+      return NextResponse.json(
+        { error: "Unauthorized"},
+        { status: 401 }
+      )
+    }
+
     const user = await User.findById(decoded.userId).select("-password");
 
     if (!user) {

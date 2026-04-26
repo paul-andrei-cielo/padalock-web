@@ -78,6 +78,8 @@ const scrollbarClass =
   "[&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-[#f2d9e2] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d985a1] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#cf6c91]";
 
 export default function ActivityPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
   const [viewMode, setViewMode] = useState<ViewMode>("MAIN_ACTIVITY");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("ALL");
   const [parcels, setParcels] = useState<Parcel[]>([]);
@@ -88,28 +90,37 @@ export default function ActivityPage() {
   const [error, setError] = useState("");
   const [selectedClip, setSelectedClip] = useState<string | null>(null);
 
-  // FETCH DATA
   useEffect(() => {
-    fetchParcels();
-    fetchLogs();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAuthenticated(false);
+      window.location.href = "/login";
+      return;
+    }
+    
+    setIsAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  const fetchData = async () => {
+    await Promise.all([fetchParcels(), fetchLogs()]);
+  };
 
   const fetchParcels = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(API_BASE, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to fetch parcels");
       }
@@ -129,16 +140,11 @@ export default function ActivityPage() {
   const fetchLogs = async () => {
     try {
       setLogsLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(LOGS_API, { headers: { Authorization: `Bearer ${token}` } });
+      
       if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to fetch logs");
       }
@@ -156,9 +162,7 @@ export default function ActivityPage() {
 
   const fetchLocker = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
+      const token = localStorage.getItem("token")!;
       const res = await fetch(LOCKER_API, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
@@ -191,7 +195,6 @@ export default function ActivityPage() {
     return date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: true });
   };
 
-  // ACTIVITY & AUDIT LOGS
   const activities: ActivityItem[] = useMemo(() => {
     return parcels.map((parcel) => {
       let activityDate = parcel.createdAt;
@@ -241,7 +244,6 @@ export default function ActivityPage() {
     })).slice(0, 20);
   }, [logs]);
 
-  // ESC KEY FOR VIDEO MODAL
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSelectedClip(null);
@@ -252,63 +254,64 @@ export default function ActivityPage() {
     }
   }, [selectedClip]);
 
-  // LOADING SCREEN
-  if (loading) {
+  if (isAuthenticated === null) {
     return (
-      <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-        <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-          <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              
-              <Link href="/home" className="flex items-center">
-                <Image
-                  src="/padalock-logo.png"
-                  alt="PadaLock logo"
-                  width={340}
-                  height={70}
-                  className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
-                  priority
-                />
-              </Link>
-
-              <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`transition hover:opacity-80 ${
-                      item.label === "ACTIVITY" ? "font-extrabold" : ""
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-
-            </div>
-          </header>
-          <section className="flex-1 flex items-center justify-center">
-            <div className="text-center text-white">
-              <div className="animate-spin h-12 w-12 border-b-2 border-white rounded-full mx-auto mb-4"></div>
-              <p className="text-xl font-bold">Loading activity...</p>
-            </div>
-          </section>
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
         </div>
       </main>
     );
   }
 
-  // MAIN PAGE RETURN
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (loading) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">Loading activity...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
       <div className="mx-auto flex h-full w-full flex-col gap-4">
         {/* HEADER */}
         <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <Image src="/padalock-logo.png" alt="PadaLock logo" width={340} height={70} className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]" priority />
-            <nav className="flex flex-wrap items-center gap-4 text-white">
+            <Link href="/home" className="flex items-center">
+              <Image
+                src="/padalock-logo.png"
+                alt="PadaLock logo"
+                width={340}
+                height={70}
+                className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
+                priority
+              />
+            </Link>
+            <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
               {navItems.map((item) => (
-                <Link key={item.label} href={item.href} className={item.label === "ACTIVITY" ? "font-extrabold" : ""}>
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`transition hover:opacity-80 ${
+                    item.label === "ACTIVITY" ? "font-extrabold" : ""
+                  }`}
+                >
                   {item.label}
                 </Link>
               ))}
@@ -318,8 +321,29 @@ export default function ActivityPage() {
 
         {/* CONTENT */}
         <section className="min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
-          {/* Activity / Audit toggle and content go here */}
-          {/* ... You can continue adding the cleaned-up activity / audit logs display */}
+          {error ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="rounded-full bg-red-100/80 p-6 text-center text-red-800">
+                <p className="text-lg font-semibold mb-2">{error}</p>
+                <button
+                  onClick={fetchData}
+                  className="inline-flex items-center gap-2 rounded-full bg-red-500 px-6 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-600"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-full min-h-0 flex-col">
+              <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
+                <div className="flex flex-col gap-4 pb-1">
+                  <div className="text-white text-center py-12">
+                    Activity content will go here...
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Video Modal */}
