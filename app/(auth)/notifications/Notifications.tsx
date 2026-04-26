@@ -46,63 +46,80 @@ export default function NotificationsPage() {
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
+        setLoading(true);
+        
         const token = localStorage.getItem("token");
+        
+        if (!token) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
 
         const res = await fetch("/api/logs", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+
+        if (res.status === 401) {
+          localStorage.removeItem("token");
+          window.location.href = "/login";
+          return;
+        }
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch notifications");
+        }
+
         const data = await res.json();
 
-        if (res.ok) {
-          const mappedNotifications: NotificationItem[] = data.map((log: any) => {
-            let type: NotificationType = "GENERAL";
-            let title = "Activity";
-            let message = log.details || "New activity recorded";
+        const mappedNotifications: NotificationItem[] = data.map((log: any) => {
+          let type: NotificationType = "GENERAL";
+          let title = "Activity";
+          let message = log.details || "New activity recorded";
 
-            if (log.action === "PARCEL_DETECTED") {
-              type = "DELIVERED";
-              title = "Parcel Delivered";
-              message = "A parcel has been detected in your PadaBox";
-            } else if (log.action === "LID_OPENED") {
-              type = "RETRIEVED";
-              title = "Parcel Retrieved";
-              message = "You opened your PadaBox";
-            } else if (
-              (log.action === "PIN_ENTERED" && !log.success) ||
-              log.action === "PIN_LOCKOUT"
-            ) {
-              type = "FAILED_PIN";
-              title = "Failed PIN Attempt";
-              message = "An incorrect PIN was entered on your PadaBox";
-            }
+          if (log.action === "PARCEL_DETECTED") {
+            type = "DELIVERED";
+            title = "Parcel Delivered";
+            message = "A parcel has been detected in your PadaBox";
+          } else if (log.action === "LID_OPENED") {
+            type = "RETRIEVED";
+            title = "Parcel Retrieved";
+            message = "You opened your PadaBox";
+          } else if (
+            (log.action === "PIN_ENTERED" && !log.success) ||
+            log.action === "PIN_LOCKOUT"
+          ) {
+            type = "FAILED_PIN";
+            title = "Failed PIN Attempt";
+            message = "An incorrect PIN was entered on your PadaBox";
+          }
 
-            const dateObj = new Date(log.timestamp);
-            const dateStr = dateObj.toLocaleDateString("en-US", {
-              month: "long",
-              day: "numeric",
-              year: "numeric",
-            });
-            const timeStr = dateObj.toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            });
-
-            return {
-              id: log._id,
-              title,
-              message,
-              date: dateStr,
-              time: timeStr,
-              type,
-              unread: false,
-            };
+          const dateObj = new Date(log.timestamp);
+          const dateStr = dateObj.toLocaleDateString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          });
+          const timeStr = dateObj.toLocaleTimeString("en-US", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
           });
 
-          setNotifications(mappedNotifications);
-        }
+          return {
+            id: log._id,
+            title,
+            message,
+            date: dateStr,
+            time: timeStr,
+            type,
+            unread: false,
+          };
+        });
+
+        setNotifications(mappedNotifications);
       } catch (error) {
         console.error("Error fetching notifications:", error);
       } finally {

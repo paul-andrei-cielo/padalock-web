@@ -36,26 +36,42 @@ export default function RegisterPage() {
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [parcelName, setParcelName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [error, setError] = useState("");
+  const [selectedClip, setSelectedClip] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTrackingNumber, setEditTrackingNumber] = useState("");
   const [editParcelName, setEditParcelName] = useState("");
 
+  // CENTRALIZED AUTH CHECK - SAME AS ACCOUNT/ACTIVITY PAGES
+  const checkAuthAndFetchData = async () => {
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return;
+    }
+
+    await fetchParcels();
+  };
+
+  // FETCH DATA
   useEffect(() => {
-    fetchParcels();
+    checkAuthAndFetchData();
   }, []);
 
   const fetchParcels = async () => {
     try {
-      setLoading(true);
+      setDataLoading(true);
       const token = localStorage.getItem("token");
-
+      
       if (!token) {
-        setError("No authentication token found");
-        setParcels([]);
+        localStorage.removeItem("token");
+        window.location.href = "/login";
         return;
       }
 
@@ -65,13 +81,14 @@ export default function RegisterPage() {
         },
       });
 
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
         throw new Error(errorData.error || "Failed to fetch parcels");
       }
 
@@ -83,6 +100,7 @@ export default function RegisterPage() {
       setError(err.message || "Failed to load parcels");
       setParcels([]);
     } finally {
+      setDataLoading(false);
       setLoading(false);
     }
   };
@@ -98,6 +116,13 @@ export default function RegisterPage() {
 
     try {
       const token = localStorage.getItem("token");
+      
+      if (!token) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+
       const res = await fetch(API_BASE, {
         method: "POST",
         headers: {
@@ -109,6 +134,12 @@ export default function RegisterPage() {
           parcelName: parcelName.trim() || "Parcel",
         }),
       });
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -146,6 +177,13 @@ export default function RegisterPage() {
 
     try {
       const token = localStorage.getItem("token");
+      
+      if (!token) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "PUT",
         headers: {
@@ -157,6 +195,12 @@ export default function RegisterPage() {
           parcelName: editParcelName.trim() || "Parcel",
         }),
       });
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -187,12 +231,25 @@ export default function RegisterPage() {
 
     try {
       const token = localStorage.getItem("token");
+      
+      if (!token) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      if (res.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
 
       if (!res.ok) {
         throw new Error("Failed to delete parcel");
@@ -222,7 +279,7 @@ export default function RegisterPage() {
       : status;
   };
 
-  const formatDate = (dateString: string | null | undefined): string => {
+  const formatDate = (dateString?: string | null): string => {
     if (!dateString) return "N/A";
 
     try {
@@ -247,6 +304,15 @@ export default function RegisterPage() {
     `.trim();
   };
 
+  // LOADING SCREEN - MATCHES ACCOUNT PAGE
+  if (loading) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">Loading register...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
       <div className="mx-auto flex h-full w-full flex-col gap-4">
@@ -258,7 +324,7 @@ export default function RegisterPage() {
                 alt="PadaLock logo"
                 width={340}
                 height={70}
-                className="h-auto w-[150px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
+                className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
                 priority
               />
             </Link>
@@ -269,7 +335,7 @@ export default function RegisterPage() {
                   key={item.label}
                   href={item.href}
                   className={`transition hover:opacity-80 ${
-                    item.href === "/register" ? "font-bold" : ""
+                    item.href === "/register" ? "font-extrabold" : ""
                   }`}
                 >
                   {item.label}
@@ -294,6 +360,12 @@ export default function RegisterPage() {
               {error && (
                 <div className="mt-3 rounded-xl bg-red-400/50 p-3 text-sm text-white">
                   {error}
+                  <button
+                    onClick={checkAuthAndFetchData}
+                    className="ml-2 inline-flex items-center gap-1 text-xs underline hover:no-underline"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
 
@@ -315,9 +387,14 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 scrollbarClass">
               <div className="flex flex-col gap-3">
-                {filteredParcels.length === 0 ? (
+                {dataLoading ? (
+                  <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">
+                    <div className="animate-spin h-8 w-8 border-2 border-[#de9aae]/50 border-t-[#de9aae] rounded-full mx-auto mb-4"></div>
+                    <p className="text-white">Loading parcels...</p>
+                  </div>
+                ) : filteredParcels.length === 0 ? (
                   <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">
                     <div>
                       <p className="text-lg font-bold text-[#de9aae] md:text-xl">

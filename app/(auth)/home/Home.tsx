@@ -55,23 +55,27 @@ export default function HomePage() {
       setLoading(true);
       setError(null);
 
-      const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
-
+      const token = localStorage.getItem("token");
+      
       if (!token) {
-        console.log("No token, redirecting to login...");
+        localStorage.removeItem("token");
         router.push("/login");
         return;
       }
 
       const response = await fetch("/api/parcels", {
         method: "GET",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        router.push("/login");
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch parcels");

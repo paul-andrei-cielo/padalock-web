@@ -91,10 +91,22 @@ export default function AccountPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token");
-      setError("");
+      
+      if (!token) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+
       const response = await fetch("/api/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch profile");
@@ -119,9 +131,22 @@ export default function AccountPage() {
     try {
       setLockerLoading(true);
       const token = localStorage.getItem("token");
+      
+      if (!token) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
+
       const response = await fetch("/api/locker", {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return;
+      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch locker");
