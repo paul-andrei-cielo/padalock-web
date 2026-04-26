@@ -38,6 +38,8 @@ const scrollbarClass =
 export default function HomePage() {
   const router = useRouter();
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
   const [stats, setStats] = useState<OverviewStats>({
     pending: 0,
     delivered: 0,
@@ -47,22 +49,29 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchOverviewStats();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAuthenticated(false);
+      window.location.href = "/login";
+      return;
+    }
+    
+    setIsAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchOverviewStats();
+    }
+  }, [isAuthenticated]);
 
   const fetchOverviewStats = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        router.push("/login");
-        return;
-      }
-
       const response = await fetch("/api/parcels", {
         method: "GET",
         headers: {
@@ -70,12 +79,6 @@ export default function HomePage() {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        router.push("/login");
-        return;
-      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch parcels");
@@ -111,6 +114,39 @@ export default function HomePage() {
   };
 
   const formatNumber = (num: number) => num.toString().padStart(2, "0");
+
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (loading) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">Loading dashboard...</div>
+      </main>
+    );
+  }
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">

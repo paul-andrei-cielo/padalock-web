@@ -33,6 +33,8 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 const API_BASE = "/api/parcels";
 
 export default function RegisterPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [parcelName, setParcelName] = useState("");
@@ -46,46 +48,33 @@ export default function RegisterPage() {
   const [editTrackingNumber, setEditTrackingNumber] = useState("");
   const [editParcelName, setEditParcelName] = useState("");
 
-  // CENTRALIZED AUTH CHECK - SAME AS ACCOUNT/ACTIVITY PAGES
-  const checkAuthAndFetchData = async () => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
-    
     if (!token) {
-      localStorage.removeItem("token");
+      setIsAuthenticated(false);
       window.location.href = "/login";
       return;
     }
-
-    await fetchParcels();
-  };
-
-  // FETCH DATA
-  useEffect(() => {
-    checkAuthAndFetchData();
+    
+    setIsAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchParcels();
+    }
+  }, [isAuthenticated]);
 
   const fetchParcels = async () => {
     try {
       setDataLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const res = await fetch(API_BASE, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      if (res.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -115,14 +104,8 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const res = await fetch(API_BASE, {
         method: "POST",
         headers: {
@@ -134,12 +117,6 @@ export default function RegisterPage() {
           parcelName: parcelName.trim() || "Parcel",
         }),
       });
-
-      if (res.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -176,14 +153,8 @@ export default function RegisterPage() {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "PUT",
         headers: {
@@ -195,12 +166,6 @@ export default function RegisterPage() {
           parcelName: editParcelName.trim() || "Parcel",
         }),
       });
-
-      if (res.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -230,26 +195,14 @@ export default function RegisterPage() {
     if (!confirm(`Delete ${trackingNumber}?`)) return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
-
-      if (res.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (!res.ok) {
         throw new Error("Failed to delete parcel");
@@ -304,7 +257,31 @@ export default function RegisterPage() {
     `.trim();
   };
 
-  // LOADING SCREEN - MATCHES ACCOUNT PAGE
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (loading) {
     return (
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
@@ -361,7 +338,7 @@ export default function RegisterPage() {
                 <div className="mt-3 rounded-xl bg-red-400/50 p-3 text-sm text-white">
                   {error}
                   <button
-                    onClick={checkAuthAndFetchData}
+                    onClick={fetchParcels}
                     className="ml-2 inline-flex items-center gap-1 text-xs underline hover:no-underline"
                   >
                     Retry
@@ -387,7 +364,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 scrollbarClass">
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
               <div className="flex flex-col gap-3">
                 {dataLoading ? (
                   <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">

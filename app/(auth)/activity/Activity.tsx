@@ -78,6 +78,8 @@ const scrollbarClass =
   "[&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-[#f2d9e2] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d985a1] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#cf6c91]";
 
 export default function ActivityPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
   const [viewMode, setViewMode] = useState<ViewMode>("MAIN_ACTIVITY");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("ALL");
   const [parcels, setParcels] = useState<Parcel[]>([]);
@@ -86,43 +88,37 @@ export default function ActivityPage() {
   const [loading, setLoading] = useState(true);
   const [logsLoading, setLogsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedClip, setSelectedClip] = useState<string | null>(null);
 
-  const checkAuthAndFetchData = async () => {
+  useEffect(() => {
     const token = localStorage.getItem("token");
-    
     if (!token) {
-      localStorage.removeItem("token");
+      setIsAuthenticated(false);
       window.location.href = "/login";
       return;
     }
-
-    await Promise.all([fetchParcels(), fetchLogs()]);
-  };
+    
+    setIsAuthenticated(true);
+  }, []);
 
   useEffect(() => {
-    checkAuthAndFetchData();
-  }, []);
+    if (isAuthenticated === true) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  const fetchData = async () => {
+    await Promise.all([fetchParcels(), fetchLogs()]);
+  };
 
   const fetchParcels = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const res = await fetch(API_BASE, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (res.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
@@ -144,22 +140,10 @@ export default function ActivityPage() {
   const fetchLogs = async () => {
     try {
       setLogsLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const res = await fetch(LOGS_API, { headers: { Authorization: `Bearer ${token}` } });
       
-      if (res.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to fetch logs");
@@ -178,9 +162,7 @@ export default function ActivityPage() {
 
   const fetchLocker = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
+      const token = localStorage.getItem("token")!;
       const res = await fetch(LOCKER_API, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
@@ -262,8 +244,6 @@ export default function ActivityPage() {
     })).slice(0, 20);
   }, [logs]);
 
-  const [selectedClip, setSelectedClip] = useState<string | null>(null);
-
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSelectedClip(null);
@@ -273,6 +253,31 @@ export default function ActivityPage() {
       return () => document.removeEventListener("keydown", handleEscape);
     }
   }, [selectedClip]);
+
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (loading) {
     return (
@@ -321,7 +326,7 @@ export default function ActivityPage() {
               <div className="rounded-full bg-red-100/80 p-6 text-center text-red-800">
                 <p className="text-lg font-semibold mb-2">{error}</p>
                 <button
-                  onClick={checkAuthAndFetchData}
+                  onClick={fetchData}
                   className="inline-flex items-center gap-2 rounded-full bg-red-500 px-6 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-600"
                 >
                   Retry
@@ -330,10 +335,8 @@ export default function ActivityPage() {
             </div>
           ) : (
             <div className="flex h-full min-h-0 flex-col">
-              {/* Your activity/audit logs content goes here */}
               <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
                 <div className="flex flex-col gap-4 pb-1">
-                  {/* Add your activity cards, filters, etc. here */}
                   <div className="text-white text-center py-12">
                     Activity content will go here...
                   </div>

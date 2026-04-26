@@ -39,102 +39,130 @@ const titleStyles: Record<NotificationType, string> = {
 };
 
 export default function NotificationsPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        
-        const token = localStorage.getItem("token");
-        
-        if (!token) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
-
-        const res = await fetch("/api/logs", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
-
-        if (!res.ok) {
-          throw new Error("Failed to fetch notifications");
-        }
-
-        const data = await res.json();
-
-        const mappedNotifications: NotificationItem[] = data.map((log: any) => {
-          let type: NotificationType = "GENERAL";
-          let title = "Activity";
-          let message = log.details || "New activity recorded";
-
-          if (log.action === "PARCEL_DETECTED") {
-            type = "DELIVERED";
-            title = "Parcel Delivered";
-            message = "A parcel has been detected in your PadaBox";
-          } else if (log.action === "LID_OPENED") {
-            type = "RETRIEVED";
-            title = "Parcel Retrieved";
-            message = "You opened your PadaBox";
-          } else if (
-            (log.action === "PIN_ENTERED" && !log.success) ||
-            log.action === "PIN_LOCKOUT"
-          ) {
-            type = "FAILED_PIN";
-            title = "Failed PIN Attempt";
-            message = "An incorrect PIN was entered on your PadaBox";
-          }
-
-          const dateObj = new Date(log.timestamp);
-          const dateStr = dateObj.toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          });
-          const timeStr = dateObj.toLocaleTimeString("en-US", {
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-          });
-
-          return {
-            id: log._id,
-            title,
-            message,
-            date: dateStr,
-            time: timeStr,
-            type,
-            unread: false,
-          };
-        });
-
-        setNotifications(mappedNotifications);
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchNotifications();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAuthenticated(false);
+      window.location.href = "/login";
+      return;
+    }
+    
+    setIsAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchNotifications();
+    }
+  }, [isAuthenticated]);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      
+      const token = localStorage.getItem("token")!;
+      
+      const res = await fetch("/api/logs", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch notifications");
+      }
+
+      const data = await res.json();
+
+      const mappedNotifications: NotificationItem[] = data.map((log: any) => {
+        let type: NotificationType = "GENERAL";
+        let title = "Activity";
+        let message = log.details || "New activity recorded";
+
+        if (log.action === "PARCEL_DETECTED") {
+          type = "DELIVERED";
+          title = "Parcel Delivered";
+          message = "A parcel has been detected in your PadaBox";
+        } else if (log.action === "LID_OPENED") {
+          type = "RETRIEVED";
+          title = "Parcel Retrieved";
+          message = "You opened your PadaBox";
+        } else if (
+          (log.action === "PIN_ENTERED" && !log.success) ||
+          log.action === "PIN_LOCKOUT"
+        ) {
+          type = "FAILED_PIN";
+          title = "Failed PIN Attempt";
+          message = "An incorrect PIN was entered on your PadaBox";
+        }
+
+        const dateObj = new Date(log.timestamp);
+        const dateStr = dateObj.toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+        const timeStr = dateObj.toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        });
+
+        return {
+          id: log._id,
+          title,
+          message,
+          date: dateStr,
+          time: timeStr,
+          type,
+          unread: false,
+        };
+      });
+
+      setNotifications(mappedNotifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filteredNotifications = useMemo(() => {
     return showUnreadOnly
       ? notifications.filter((item) => item.unread)
       : notifications;
   }, [showUnreadOnly, notifications]);
+
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
@@ -200,13 +228,11 @@ export default function NotificationsPage() {
               </div>
             </div>
 
-            <div
-              className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}
-            >
+            <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
               {loading ? (
                 <div className="flex min-h-[220px] items-center justify-center">
                   <p className="text-center text-base font-medium text-white md:text-lg">
-                    Loading...
+                    Loading notifications...
                   </p>
                 </div>
               ) : filteredNotifications.length === 0 ? (

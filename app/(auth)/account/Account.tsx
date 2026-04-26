@@ -38,6 +38,8 @@ interface UserProfile {
 }
 
 export default function AccountPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -66,47 +68,16 @@ export default function AccountPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [codeVerified, setCodeVerified] = useState(false);
   const [updatingPin, setUpdatingPin] = useState(false);
-  const [step, setStep] = useState(1); 
-
-  useEffect(() => {
-    const fetchData = async () => {
-      await Promise.all([fetchUserProfile(), fetchLocker()]);
-    };
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (!showChangePinCard) {
-      setStep(1);
-      setCurrentPin("");
-      setVerificationCode("");
-      setNewPin("");
-      setConfirmPin("");
-      setCodeSent(false);
-      setCodeVerified(false);
-    }
-  }, [showChangePinCard]);
+  const [step, setStep] = useState(1);
 
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const response = await fetch("/api/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch profile");
@@ -130,23 +101,11 @@ export default function AccountPage() {
   const fetchLocker = async () => {
     try {
       setLockerLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
       
-      if (!token) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
-
       const response = await fetch("/api/locker", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (!response.ok) {
         throw new Error("Failed to fetch locker");
@@ -162,7 +121,7 @@ export default function AccountPage() {
     }
   };
 
-  const formatPinDisplay = (pin: string | number | undefined) => {
+  const formatPinDisplay = (pin: string | number | null | undefined) => {
     if (!pin) return "••••";
     return pin.toString().padStart(4, "0");
   };
@@ -373,6 +332,69 @@ export default function AccountPage() {
     localStorage.removeItem("token");
     window.location.href = "/";
   };
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (typeof window === 'undefined') return;
+      
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsAuthenticated(false);
+        window.location.href = "/login";
+        return;
+      }
+
+      setIsAuthenticated(true);
+    };
+
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      const fetchData = async () => {
+        await Promise.all([fetchUserProfile(), fetchLocker()]);
+      };
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!showChangePinCard) {
+      setStep(1);
+      setCurrentPin("");
+      setVerificationCode("");
+      setNewPin("");
+      setConfirmPin("");
+      setCodeSent(false);
+      setCodeVerified(false);
+    }
+  }, [showChangePinCard]);
+
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (loading) {
     return (
