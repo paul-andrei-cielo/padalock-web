@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Register | PadaLock",
+  title: "PadaLock",
 };
 
 import Register from "./Register";
