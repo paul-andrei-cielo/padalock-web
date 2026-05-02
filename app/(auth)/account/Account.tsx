@@ -919,7 +919,7 @@ export default function AccountPage() {
                     Are you absolutely sure you want to delete your PadaLock account?
                   </p>
                   <p className="text-sm text-gray-600">
-                    This will permanently delete your account and all associated data including activity records and locker access.
+                    This will permanently delete your account. All associated data including activity records and locker access will be queued for deletion and you will no longer be able to track your parcels. This action cannot be undone.
                   </p>
                 </div>
 
