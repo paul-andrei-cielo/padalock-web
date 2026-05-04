@@ -47,7 +47,7 @@ export default function AccountPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
 
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [deactivatePassword, setDeactivatePassword] = useState("");
@@ -308,8 +308,8 @@ export default function AccountPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteEmail !== user?.email) {
-      alert("Please enter your email address exactly as shown to confirm deletion.");
+    if (!deletePassword) {
+      alert("Password required");
       return;
     }
 
@@ -344,7 +344,7 @@ export default function AccountPage() {
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);
-      setDeleteEmail("");
+      setDeletePassword("");
     }
   };
 
@@ -998,30 +998,25 @@ export default function AccountPage() {
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Type your email to confirm
+                    Enter your password to confirm
                   </label>
                   <div className="relative">
                     <input
-                      type="email"
-                      value={deleteEmail}
-                      onChange={(e) => setDeleteEmail(e.target.value)}
-                      placeholder="Enter your email address"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Enter your password"
                       className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 pr-14 text-base text-gray-800 outline-none ring-0 focus:border-2 focus:border-[#ef1f1f] focus:bg-white md:text-lg"
                       disabled={deleting}
                     />
                   </div>
-                  {deleteEmail && deleteEmail !== user?.email && (
-                    <p className="mt-1 text-sm text-[#ef1f1f]">
-                      Email must match exactly
-                    </p>
-                  )}
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
                     onClick={() => {
                       setShowDeleteConfirm(false);
-                      setDeleteEmail("");
+                      setDeletePassword("");
                     }}
                     disabled={deleting}
                     className="flex-1 rounded-[1.5rem] border-2 border-[#ef1f1f] bg-transparent px-6 py-4 font-extrabold text-[#ef1f1f] transition hover:bg-[#ef1f1f] hover:text-white disabled:opacity-50 md:text-lg"
@@ -1030,7 +1025,7 @@ export default function AccountPage() {
                   </button>
                   <button
                     onClick={handleDeleteAccount}
-                    disabled={deleting || deleteEmail !== user?.email}
+                    disabled={deleting || !deletePassword}
                     className="flex-1 inline-flex items-center justify-center rounded-[1.5rem] bg-[#ef1f1f] px-6 py-4 font-extrabold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed md:text-lg"
                   >
                     {deleting ? (

@@ -1,22 +1,36 @@
-import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import User from "@/models/User";
+import bcrypt from "bcryptjs";
 import { getUserFromRequest } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function PATCH(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     await connectDB();
 
-    const user = getUserFromRequest(req);
-    const userId = user.id || user.userId;
+    const decoded: any = getUserFromRequest(req);
+    const { password } = await req.json();
 
-    await User.findByIdAndUpdate(userId, {
-      isDeleted: true,
-      deletedAt: new Date(),
-    });
+    const user = await User.findById(decoded.userId);
 
-    return NextResponse.json({ message: "Account deactivated" });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+    }
+
+    user.isDeleted = true;
+    user.deletedAt = new Date();
+
+    await user.save();
+
+    return NextResponse.json({ message: "Account deactivated for 30 days" });
+
   } catch (error) {
-    return NextResponse.json({ error: "Failed to deactivate" }, { status: 500 });
+    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }
