@@ -44,11 +44,13 @@ export default function HomePage() {
     retrieved: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("today");
+  const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOverviewStats();
-  }, []);
+  }, [filter]);
 
   const fetchOverviewStats = async () => {
     try {
@@ -89,7 +91,29 @@ export default function HomePage() {
               acc.delivered++;
               break;
             case "RETRIEVED":
-              acc.retrieved++;
+              if (parcel.retrievedDate) {
+                const date = new Date(parcel.retrievedDate);
+                const now = new Date();
+
+                const isToday = date.toDateString() === now.toDateString();
+
+                const isWeek = date >= new Date(new Date().setDate(new Date().getDate() - 7));
+
+                const isMonth =
+                  date.getMonth() === now.getMonth() &&
+                  date.getFullYear() === now.getFullYear();
+
+                const isYear = date.getFullYear() === now.getFullYear();
+
+                if (
+                  (filter === "today" && isToday) ||
+                  (filter === "week" && isWeek) ||
+                  (filter === "month" && isMonth) ||
+                  (filter === "year" && isYear)
+                ) {
+                  acc.retrieved++;
+                }
+              }
               break;
           }
           return acc;
@@ -187,9 +211,37 @@ export default function HomePage() {
                     <p className="text-5xl font-light text-[#df4473] md:text-6xl lg:text-7xl">
                       {formatNumber(stats.retrieved)}
                     </p>
-                    <div className="mt-2 flex w-full max-w-[120px] items-center justify-between rounded-full bg-white/50 px-3 py-1 text-xs text-[#df4473]">
-                      <span>Today</span>
-                      <span>˅</span>
+                    <div className="relative mt-2 w-full max-w-[140px]">
+                      <button
+                        onClick={() => setShowDropdown(!showDropdown)}
+                        className="flex w-full items-center justify-between rounded-full bg-white/50 px-3 py-1 text-xs text-[#df4473]"
+                      >
+                        <span className="capitalize">{filter}</span>
+                        <span>˅</span>
+                      </button>
+
+                      {showDropdown && (
+                        <div className="absolute mt-1 w-full rounded-lg bg-white shadow-md text-xs text-[#df4473] overflow-hidden">
+                          {["today", "week", "month", "year"].map((item) => (
+                            <button
+                              key={item}
+                              onClick={() => {
+                                setFilter(item);
+                                setShowDropdown(false);
+                              }}
+                              className="w-full px-3 py-2 text-left hover:bg-[#f4d2dc]"
+                            >
+                              {item === "today"
+                                ? "Today"
+                                : item === "week"
+                                ? "This Week"
+                                : item === "month"
+                                ? "This Month"
+                                : "This Year"}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
