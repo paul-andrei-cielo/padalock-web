@@ -43,6 +43,7 @@ export default function HomePage() {
     delivered: 0,
     retrieved: 0,
   });
+  const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("today");
   const [showDropdown, setShowDropdown] = useState(false);
@@ -80,6 +81,28 @@ export default function HomePage() {
       }
 
       const parcels: Parcel[] = await response.json();
+      const recentEvents = parcels
+        .filter(p => p.deliveryDate || p.retrievedDate)
+        .map(p => {
+          if (p.status === "DELIVERED" && p.deliveryDate) {
+            return {
+              type: "Delivered",
+              date: new Date(p.deliveryDate),
+            };
+          }
+          if (p.status === "RETRIEVED" && p.retrievedDate) {
+            return {
+              type: "Retrieved",
+              date: new Date(p.retrievedDate),
+            };
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .sort((a: any, b: any) => b.date - a.date)
+        .slice(0, 5);
+
+      setRecent(recentEvents);
 
       const stats = parcels.reduce(
         (acc, parcel) => {
@@ -256,33 +279,20 @@ export default function HomePage() {
 
             <div className={`min-h-0 flex-1 overflow-y-auto rounded-[1.5rem] bg-white/35 p-3 pr-2 ${scrollbarClass}`}>
               <div className="flex flex-col gap-3">
-                {[
-                  ["📦", "Delivered", "(3 Parcel/s)", "Today, 3:10 PM"],
-                  ["📦", "Retrieved", "(1 Parcel/s)", "March 23, 2:14 PM"],
-                  ["❗", "Failed PIN Attempt", "", "March 22, 6:02 PM"],
-                ].map(([icon, title, extra, time]) => (
+                {recent.map((item, index) => (
                   <div
-                    key={`${title}-${time}`}
+                    key={index}
                     className="flex items-start gap-3 rounded-[1.25rem] bg-white/55 px-4 py-3"
                   >
-                    <span
-                      className={`text-xl ${
-                        title === "Failed PIN Attempt"
-                          ? "text-red-500"
-                          : "text-[#df4473]"
-                      }`}
-                    >
-                      {icon}
-                    </span>
+                    <span className="text-xl text-[#df4473]">📦</span>
 
                     <div className="min-w-0 text-[#df4473]">
                       <p className="text-sm font-extrabold md:text-base">
-                        {title}{" "}
-                        {extra && (
-                          <span className="italic font-medium">{extra}</span>
-                        )}
+                        {item.type}
                       </p>
-                      <p className="text-xs md:text-sm">{time}</p>
+                      <p className="text-xs md:text-sm">
+                        {item.date.toLocaleString()}
+                      </p>
                     </div>
                   </div>
                 ))}
