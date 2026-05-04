@@ -77,18 +77,44 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    if (user.isDeleted) {
-      return NextResponse.json({ error: "Account already deleted" }, { status: 400 });
+    // HARD DELETE (PERMANENT)
+    await User.findByIdAndDelete(decoded.userId);
+
+    return NextResponse.json({ message: "Account permanently deleted" });
+  } catch (error) {
+    console.error("Delete account error:", error);
+    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    await connectDB();
+
+    const decoded: any = getUserFromRequest(req);
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    if (user.isDeleted) {
+      return NextResponse.json(
+        { error: "Account already deactivated" },
+        { status: 400 }
+      );
+    }
+
+    // SOFT DELETE
     user.isDeleted = true;
     user.deletedAt = new Date();
 
     await user.save();
 
-    return NextResponse.json({ message: "Account deleted successfully" });
+    return NextResponse.json({ message: "Account deactivated (30 days)" });
   } catch (error) {
-    console.error("Delete account error:", error);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+    console.error("Deactivate error:", error);
+    return NextResponse.json({ error: "Deactivate failed" }, { status: 500 });
   }
 }

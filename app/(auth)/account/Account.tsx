@@ -49,6 +49,10 @@ export default function AccountPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteEmail, setDeleteEmail] = useState("");
 
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [deactivatePassword, setDeactivatePassword] = useState("");
+  const [deactivating, setDeactivating] = useState(false);
+
   const [locker, setLocker] = useState<any>(null);
   const [lockerLoading, setLockerLoading] = useState(true);
 
@@ -343,6 +347,43 @@ export default function AccountPage() {
       setDeleteEmail("");
     }
   };
+
+  const handleDeactivateAccount = async () => {
+    if (!deactivatePassword) {
+      alert("Password required");
+      return;
+    }
+
+    try {
+      setDeactivating(true);
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("/api/users/deactivate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password: deactivatePassword }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed");
+      }
+
+      alert("Account deactivated for 30 days");
+
+      localStorage.removeItem("token");
+      window.location.href = "/";
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setDeactivating(false);
+      setShowDeactivateConfirm(false);
+      setDeactivatePassword("");
+    }
+};
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -832,6 +873,38 @@ export default function AccountPage() {
                     </div>
                   )}
 
+                  {/* Account Deactivation Card */}
+                  <div className="rounded-[1.75rem] bg-[#f5d68a]/95 p-4 md:p-5">
+                    <div className="mb-5 flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#b7791f]">
+                        <LockKeyhole className="h-5 w-5" />
+                      </div>
+                      <h2 className="text-xl font-extrabold text-white md:text-2xl">
+                        Account Deactivation
+                      </h2>
+                    </div>
+
+                    <div className="rounded-[1.5rem] bg-white/70 px-4 py-4 md:px-5">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <h3 className="text-xl font-extrabold text-[#b7791f] md:text-2xl">
+                            Deactivate Account
+                          </h3>
+                          <p className="text-sm text-[#b7791f] md:text-base">
+                            Your account will be disabled for 30 days. You can log back in to restore it.
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => setShowDeactivateConfirm(true)}
+                          className="inline-flex items-center justify-center rounded-full bg-[#b7791f] px-6 py-3 text-base font-extrabold text-white"
+                        >
+                          Deactivate
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Account Deletion Card */}
                   <div className="rounded-[1.75rem] bg-[#f28a92]/95 p-4 md:p-5">
                     <div className="mb-5 flex items-center gap-3">
@@ -968,6 +1041,92 @@ export default function AccountPage() {
                     ) : (
                       "Yes, Delete My Account"
                     )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Floating Deactivate Confirmation Modal */}
+      {showDeactivateConfirm && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowDeactivateConfirm(false)}
+          />
+          
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b7791f]/20 p-2">
+                    <LockKeyhole className="h-6 w-6 text-[#b7791f]" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-[#b7791f] md:text-3xl">
+                      Deactivate Account
+                    </h3>
+                    <p className="text-sm text-[#b7791f]/80">
+                      This action is temporary
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowDeactivateConfirm(false)}
+                  disabled={deactivating}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-[#b7791f] hover:bg-[#b7791f]/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <p className="mb-4 text-lg font-semibold text-gray-800">
+                    Are you sure you want to deactivate your account?
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Your account will be disabled for 30 days. You can restore it by logging in.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Enter your password to confirm
+                  </label>
+
+                  <input
+                    type="password"
+                    value={deactivatePassword}
+                    onChange={(e) => setDeactivatePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 text-base outline-none focus:border-2 focus:border-[#b7791f]"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    onClick={() => {
+                      setShowDeactivateConfirm(false);
+                      setDeactivatePassword("");
+                    }}
+                    disabled={deactivating}
+                    className="flex-1 rounded-[1.5rem] border-2 border-[#b7791f] px-6 py-4 font-extrabold text-[#b7791f] hover:bg-[#b7791f] hover:text-white"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleDeactivateAccount}
+                    disabled={deactivating || !deactivatePassword}
+                    className="flex-1 rounded-[1.5rem] bg-[#b7791f] px-6 py-4 font-extrabold text-white"
+                  >
+                    {deactivating ? "Processing..." : "Deactivate"}
                   </button>
                 </div>
               </div>
