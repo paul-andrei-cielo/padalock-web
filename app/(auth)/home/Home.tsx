@@ -279,7 +279,8 @@ export default function HomePage() {
 
             <div className={`min-h-0 flex-1 overflow-y-auto rounded-[1.5rem] bg-white/35 p-3 pr-2 ${scrollbarClass}`}>
               <div className="flex flex-col gap-3">
-                {recent.map((item, index) => (
+                {recent.length > 0 ? (
+                recent.map((item, index) => (
                   <div
                     key={index}
                     className="flex items-start gap-3 rounded-[1.25rem] bg-white/55 px-4 py-3"
@@ -295,7 +296,18 @@ export default function HomePage() {
                       </p>
                     </div>
                   </div>
-                ))}
+                ))
+              ) : (
+                //Added Empty State
+                <div className="flex h-full flex-col items-center justify-center p-6 text-center">
+                  <p className="text-sm font-medium text-[#df4473]/70 md:text-base">
+                      No recent updates
+                  </p>
+                  <p className="text-xs text-[#df4473]/50">
+                      Activity will appear here once parcels are processed.
+                  </p>
+                </div>
+              )}
               </div>
             </div>
           </aside>
