@@ -94,7 +94,9 @@ export default function RegisterPage() {
     }
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!trackingNumber.trim()) {
       setError("Please enter a tracking number");
       return;
@@ -525,40 +527,49 @@ export default function RegisterPage() {
               </h2>
             </div>
 
-            <div className="mt-6">
-              <label className="mb-2 block text-base font-medium text-white md:text-lg">
-                Tracking number
-              </label>
-              <input
-                type="text"
-                placeholder="Enter your parcel's tracking number"
-                className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] md:h-14 md:text-base"
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                disabled={loading}
-              />
+            <form className="mt-6 space-y-4" onSubmit={handleRegister}>
+              <div>
+                <label className="mb-2 block text-base font-medium text-white md:text-lg">
+                  Tracking number *
+                </label>
+                <input
+                  id="trackingNumber"
+                  type="text"
+                  placeholder="Enter your parcel's tracking number"
+                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-white/50 md:h-14 md:text-base"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  disabled={loading}
+                  required
+                  autoComplete="off"
+                />
+              </div>
 
-              <label className="mb-2 mt-4 block text-base font-medium text-white md:text-lg">
-                Parcel name (optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Birthday Gift, Documents"
-                className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] md:h-14 md:text-base"
-                value={parcelName}
-                onChange={(e) => setParcelName(e.target.value)}
-                disabled={loading}
-              />
+              <div>
+                <label className="mb-2 block text-base font-medium text-white md:text-lg">
+                  Parcel name (optional)
+                </label>
+                <input
+                  id="parcelName"
+                  type="text"
+                  placeholder="e.g., Birthday Gift, Documents"
+                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-white/50 md:h-14 md:text-base"
+                  value={parcelName}
+                  onChange={(e) => setParcelName(e.target.value)}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+              </div>
 
               <button
-                type="button"
-                onClick={handleRegister}
+                type="submit"
                 disabled={loading || !trackingNumber.trim()}
-                className="mt-6 h-12 w-full rounded-full bg-[#df4473] px-6 text-base font-extrabold text-white transition hover:scale-[1.01] disabled:opacity-50 md:h-14 md:text-xl"
+                className="h-12 w-full rounded-full bg-[#df4473] px-6 text-base font-extrabold text-white transition hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed md:h-14 md:text-xl"
               >
                 {loading ? "Registering..." : "Register"}
               </button>
-            </div>
+            </form>
+
           </div>
         </section>
       </div>
