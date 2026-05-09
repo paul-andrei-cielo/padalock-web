@@ -10,6 +10,12 @@ export async function GET(request: NextRequest) {
     await connectDB();
     
     const user = getUserFromRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
     const userId = new mongoose.Types.ObjectId(user.id || user.userId);
 
     const lockers = await Locker.find({ userId }).populate('userId');

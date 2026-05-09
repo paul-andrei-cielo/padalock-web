@@ -53,21 +53,20 @@ export default function HomePage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-  
     if (!token) {
       setIsAuthenticated(false);
-      router.push("/login");
+      window.location.href = "/login";
       return;
     }
-  
+    
     setIsAuthenticated(true);
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated === true) {
       fetchOverviewStats();
     }
-  }, [isAuthenticated, filter]);
+  }, [isAuthenticated]);
 
   const fetchOverviewStats = async () => {
     try {
