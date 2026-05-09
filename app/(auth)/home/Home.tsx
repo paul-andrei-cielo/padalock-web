@@ -69,6 +69,12 @@ export default function HomePage() {
     }
   }, [isAuthenticated, filter]);
 
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchOverviewStats();
+    }
+  }, [isAuthenticated]);
+
   const fetchOverviewStats = async () => {
     try {
       setLoading(true);
