@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "PadaLock",
+  title: "PadaLock | Notifications",
 };
 
 import Notifications from "./Notifications";
