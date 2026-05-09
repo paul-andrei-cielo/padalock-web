@@ -53,11 +53,13 @@ export default function HomePage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       setIsAuthenticated(false);
-      router.push("/login"); 
+      router.push("/login");
       return;
     }
+
     setIsAuthenticated(true);
   }, [router]);
 
