@@ -50,7 +50,7 @@ export default function HomePage() {
   const [filter, setFilter] = useState("today");
   const [showDropdown, setShowDropdown] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -61,18 +61,11 @@ export default function HomePage() {
     setIsAuthenticated(true);
   }, [router]);
 
-  
   useEffect(() => {
     if (isAuthenticated === true) {
       fetchOverviewStats();
     }
   }, [isAuthenticated, filter]);
-
-  useEffect(() => {
-    if (isAuthenticated === true) {
-      fetchOverviewStats();
-    }
-  }, [isAuthenticated]);
 
   const fetchOverviewStats = async () => {
     try {
