@@ -48,6 +48,8 @@ export default function AccountPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deactivateError, setDeactivateError] = useState("");
 
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [deactivatePassword, setDeactivatePassword] = useState("");
@@ -312,39 +314,40 @@ export default function AccountPage() {
       alert("Password required");
       return;
     }
-
-    if (!confirm("Are you absolutely sure? This will permanently delete your account and all data.")) {
-      return;
-    }
-
+  
     try {
       setDeleting(true);
+      setDeleteError("");
+  
       const token = localStorage.getItem("token");
-      
+  
       const response = await fetch("/api/users/profile", {
         method: "DELETE",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          password: deletePassword,
+        }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to delete account");
       }
-
-      const data = await response.json();
+  
       alert("Account deleted successfully. You will be logged out.");
-      
+  
+      setShowDeleteConfirm(false); // close only on success
+      setDeletePassword("");
+  
       localStorage.removeItem("token");
       window.location.href = "/";
     } catch (err: any) {
-      alert(err.message || "Failed to delete account");
-      console.error("Account deletion error:", err);
+      setDeleteError(err.message || "Failed to delete account");
     } finally {
       setDeleting(false);
-      setShowDeleteConfirm(false);
-      setDeletePassword("");
     }
   };
 
@@ -353,11 +356,13 @@ export default function AccountPage() {
       alert("Password required");
       return;
     }
-
+  
     try {
       setDeactivating(true);
+      setDeactivateError("");
+  
       const token = localStorage.getItem("token");
-
+  
       const res = await fetch("/api/users/deactivate", {
         method: "POST",
         headers: {
@@ -366,24 +371,25 @@ export default function AccountPage() {
         },
         body: JSON.stringify({ password: deactivatePassword }),
       });
-
+  
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed");
       }
-
+  
       alert("Account deactivated for 30 days");
-
+  
+      setShowDeactivateConfirm(false); // close only on success
+      setDeactivatePassword("");
+  
       localStorage.removeItem("token");
       window.location.href = "/";
     } catch (err: any) {
-      alert(err.message);
+      setDeactivateError(err.message || "Failed");
     } finally {
       setDeactivating(false);
-      setShowDeactivateConfirm(false);
-      setDeactivatePassword("");
     }
-};
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -1010,6 +1016,11 @@ export default function AccountPage() {
                       disabled={deleting}
                     />
                   </div>
+                  {deleteError && (
+                    <p className="mt-2 text-sm text-red-500 font-semibold">
+                      {deleteError}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
@@ -1103,6 +1114,11 @@ export default function AccountPage() {
                     className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 text-base outline-none focus:border-2 focus:border-[#b7791f]"
                   />
                 </div>
+                {deactivateError && (
+                  <p className="mt-2 text-sm text-red-500 font-semibold">
+                    {deactivateError}
+                  </p>
+                )}
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
@@ -1119,7 +1135,9 @@ export default function AccountPage() {
                   <button
                     onClick={handleDeactivateAccount}
                     disabled={deactivating || !deactivatePassword}
-                    className="flex-1 rounded-[1.5rem] bg-[#b7791f] px-6 py-4 font-extrabold text-white"
+                    className="flex-1 rounded-[1.5rem] bg-[#b7791f] px-6 py-4 font-extrabold text-white 
+                              transition hover:opacity-90 
+                              disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {deactivating ? "Processing..." : "Deactivate"}
                   </button>

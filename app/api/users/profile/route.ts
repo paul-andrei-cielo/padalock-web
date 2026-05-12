@@ -71,19 +71,46 @@ export async function DELETE(req: NextRequest) {
 
     const decoded: any = getUserFromRequest(req);
 
+    const { password } = await req.json();
+
+    if (!password) {
+      return NextResponse.json(
+        { error: "Password is required" },
+        { status: 400 }
+      );
+    }
+
     const user = await User.findById(decoded.userId);
 
     if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
     }
 
-    // HARD DELETE (PERMANENT)
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return NextResponse.json(
+        { error: "Incorrect password" },
+        { status: 401 }
+      );
+    }
+
     await User.findByIdAndDelete(decoded.userId);
 
-    return NextResponse.json({ message: "Account permanently deleted" });
+    return NextResponse.json({
+      message: "Account permanently deleted",
+    });
+
   } catch (error) {
     console.error("Delete account error:", error);
-    return NextResponse.json({ error: "Delete failed" }, { status: 500 });
+
+    return NextResponse.json(
+      { error: "Delete failed" },
+      { status: 500 }
+    );
   }
 }
 
