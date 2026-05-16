@@ -317,9 +317,9 @@ export default function ActivityPage() {
             {/* Desktop Navigation */}
             <nav className="hidden items-center gap-x-6 text-base font-medium text-white lg:flex lg:text-lg">
               <Link href="/register" className="transition hover:opacity-80">REGISTER</Link>
-              <Link href="/activity" className="transition hover:opacity-80">ACTIVITY</Link>
+              <Link href="/activity" className="transition hover:opacity-80 underline decoration-2 underline-offset-4">ACTIVITY</Link>
               <Link href="/notifications" className="transition hover:opacity-80">NOTIFICATIONS</Link>
-              <Link href="/account" className="transition hover:opacity-80 underline decoration-2 underline-offset-4">ACCOUNT</Link>
+              <Link href="/account" className="transition hover:opacity-80">ACCOUNT</Link>
             </nav>
           </div>
         </header>
