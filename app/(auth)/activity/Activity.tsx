@@ -78,6 +78,8 @@ const scrollbarClass =
   "[&::-webkit-scrollbar]:w-2.5 [&::-webkit-scrollbar-track]:bg-[#f2d9e2] [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#d985a1] [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-[#cf6c91]";
 
 export default function ActivityPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("MAIN_ACTIVITY");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("ALL");
   const [parcels, setParcels] = useState<Parcel[]>([]);
@@ -89,26 +91,36 @@ export default function ActivityPage() {
   const [selectedClip, setSelectedClip] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchParcels();
-    fetchLogs();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAuthenticated(false);
+      window.location.href = "/login";
+      return;
+    }
+    
+    setIsAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  const fetchData = async () => {
+    await Promise.all([fetchParcels(), fetchLogs()]);
+  };
 
   const fetchParcels = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(API_BASE, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to fetch parcels");
       }
@@ -128,16 +140,11 @@ export default function ActivityPage() {
   const fetchLogs = async () => {
     try {
       setLogsLoading(true);
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No authentication token found");
-
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(LOGS_API, { headers: { Authorization: `Bearer ${token}` } });
+      
       if (!res.ok) {
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData.error || "Failed to fetch logs");
       }
@@ -155,9 +162,7 @@ export default function ActivityPage() {
 
   const fetchLocker = async () => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
+      const token = localStorage.getItem("token")!;
       const res = await fetch(LOCKER_API, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
@@ -249,72 +254,110 @@ export default function ActivityPage() {
     }
   }, [selectedClip]);
 
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   if (loading) {
     return (
-      <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-        <div className="mx-auto flex h-full max-w-[1600px] flex-col gap-4">
-          <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              
-              <Link href="/home" className="flex items-center">
-                <Image
-                  src="/padalock-logo.png"
-                  alt="PadaLock logo"
-                  width={340}
-                  height={70}
-                  className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
-                  priority
-                />
-              </Link>
-
-              <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`transition hover:opacity-80 ${
-                      item.label === "ACTIVITY" ? "font-extrabold" : ""
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-
-            </div>
-          </header>
-          <section className="flex-1 flex items-center justify-center">
-            <div className="text-center text-white">
-              <div className="animate-spin h-12 w-12 border-b-2 border-white rounded-full mx-auto mb-4"></div>
-              <p className="text-xl font-bold">Loading activity...</p>
-            </div>
-          </section>
-        </div>
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">Loading activity...</div>
       </main>
     );
   }
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-      <div className="mx-auto flex h-full w-full flex-col gap-4">
-        {/* HEADER */}
-        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <Image src="/padalock-logo.png" alt="PadaLock logo" width={340} height={70} className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]" priority />
-            <nav className="flex flex-wrap items-center gap-4 text-white">
-              {navItems.map((item) => (
-                <Link key={item.label} href={item.href} className={item.label === "ACTIVITY" ? "font-extrabold" : ""}>
-                  {item.label}
-                </Link>
-              ))}
+      <div className="relative mx-auto flex h-full w-full flex-col gap-4">
+        <header className="relative z-50 shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+          <div className="flex items-center justify-between lg:flex-row lg:items-center">
+            <Link href="/home">
+              <Image
+                src="/padalock-logo.png"
+                alt="PadaLock logo"
+                width={340}
+                height={70}
+                className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
+                priority
+              />
+            </Link>
+
+            {/* Hamburger Button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-xl bg-white/20 p-2 text-white transition hover:bg-white/30 lg:hidden"
+              aria-label="Toggle navigation menu"
+            >
+              <span className={`h-0.5 w-6 rounded-full bg-white transition-transform duration-300 ${isMenuOpen ? "translate-y-2 rotate-45" : ""}`} />
+              <span className={`h-0.5 w-6 rounded-full bg-white transition-opacity duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
+              <span className={`h-0.5 w-6 rounded-full bg-white transition-transform duration-300 ${isMenuOpen ? "-translate-y-2 -rotate-45" : ""}`} />
+            </button>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden items-center gap-x-6 text-base font-medium text-white lg:flex lg:text-lg">
+              <Link href="/register" className="transition hover:opacity-80">REGISTER</Link>
+              <Link href="/activity" className="transition hover:opacity-80">ACTIVITY</Link>
+              <Link href="/notifications" className="transition hover:opacity-80">NOTIFICATIONS</Link>
+              <Link href="/account" className="transition hover:opacity-80 underline decoration-2 underline-offset-4">ACCOUNT</Link>
             </nav>
           </div>
         </header>
 
+        {isMenuOpen && (
+          <nav className="absolute left-4 right-4 top-[75px] z-50 flex flex-col gap-y-1.5 rounded-[1.5rem] bg-white/85 p-4 text-center text-sm font-bold text-[#df4473] shadow-xl backdrop-blur-xl border border-white/30 transition-all lg:hidden">
+            <Link href="/register" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">REGISTER</Link>
+            <Link href="/activity" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition bg-[#df4473]/10 text-[#df4473] active:bg-[#df4473]/20">ACTIVITY</Link>
+            <Link href="/notifications" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">NOTIFICATIONS</Link>
+            <Link href="/account" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">ACCOUNT</Link>
+          </nav>
+        )}
+
         {/* CONTENT */}
         <section className="min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
-          {/* Activity / Audit toggle and content go here */}
-          {/* ... You can continue adding the cleaned-up activity / audit logs display */}
+          {error ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="rounded-full bg-red-100/80 p-6 text-center text-red-800">
+                <p className="text-lg font-semibold mb-2">{error}</p>
+                <button
+                  onClick={fetchData}
+                  className="inline-flex items-center gap-2 rounded-full bg-red-500 px-6 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-600"
+                >
+                  Retry
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex h-full min-h-0 flex-col">
+              <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
+                <div className="flex flex-col gap-4 pb-1">
+                  <div className="text-white text-center py-12">
+                    Activity content will go here...
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* Video Modal */}

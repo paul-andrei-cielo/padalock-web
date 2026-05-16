@@ -38,16 +38,25 @@ interface UserProfile {
 }
 
 export default function AccountPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deactivateError, setDeactivateError] = useState("");
+
+  const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
+  const [deactivatePassword, setDeactivatePassword] = useState("");
+  const [deactivating, setDeactivating] = useState(false);
 
   const [locker, setLocker] = useState<any>(null);
   const [lockerLoading, setLockerLoading] = useState(true);
@@ -66,32 +75,13 @@ export default function AccountPage() {
   const [codeSent, setCodeSent] = useState(false);
   const [codeVerified, setCodeVerified] = useState(false);
   const [updatingPin, setUpdatingPin] = useState(false);
-  const [step, setStep] = useState(1); 
-
-  useEffect(() => {
-    const fetchData = async () => {
-      await Promise.all([fetchUserProfile(), fetchLocker()]);
-    };
-    fetchData();
-  }, []);
-
-  useEffect(() => {
-    if (!showChangePinCard) {
-      setStep(1);
-      setCurrentPin("");
-      setVerificationCode("");
-      setNewPin("");
-      setConfirmPin("");
-      setCodeSent(false);
-      setCodeVerified(false);
-    }
-  }, [showChangePinCard]);
+  const [step, setStep] = useState(1);
 
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token");
-      setError("");
+      const token = localStorage.getItem("token")!;
+      
       const response = await fetch("/api/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -118,7 +108,8 @@ export default function AccountPage() {
   const fetchLocker = async () => {
     try {
       setLockerLoading(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
+      
       const response = await fetch("/api/locker", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -137,7 +128,7 @@ export default function AccountPage() {
     }
   };
 
-  const formatPinDisplay = (pin: string | number | undefined) => {
+  const formatPinDisplay = (pin: string | number | null | undefined) => {
     if (!pin) return "••••";
     return pin.toString().padStart(4, "0");
   };
@@ -304,43 +295,84 @@ export default function AccountPage() {
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteEmail !== user?.email) {
-      alert("Please enter your email address exactly as shown to confirm deletion.");
+    if (!deletePassword) {
+      alert("Password required");
       return;
     }
-
-    if (!confirm("Are you absolutely sure? This will permanently delete your account and all data.")) {
-      return;
-    }
-
+  
     try {
       setDeleting(true);
+      setDeleteError("");
+  
       const token = localStorage.getItem("token");
-      
+  
       const response = await fetch("/api/users/profile", {
         method: "DELETE",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          password: deletePassword,
+        }),
       });
-
+  
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to delete account");
       }
-
-      const data = await response.json();
+  
       alert("Account deleted successfully. You will be logged out.");
-      
+  
+      setShowDeleteConfirm(false); // close only on success
+      setDeletePassword("");
+  
       localStorage.removeItem("token");
       window.location.href = "/";
     } catch (err: any) {
-      alert(err.message || "Failed to delete account");
-      console.error("Account deletion error:", err);
+      setDeleteError(err.message || "Failed to delete account");
     } finally {
       setDeleting(false);
-      setShowDeleteConfirm(false);
-      setDeleteEmail("");
+    }
+  };
+
+  const handleDeactivateAccount = async () => {
+    if (!deactivatePassword) {
+      alert("Password required");
+      return;
+    }
+  
+    try {
+      setDeactivating(true);
+      setDeactivateError("");
+  
+      const token = localStorage.getItem("token");
+  
+      const res = await fetch("/api/users/deactivate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ password: deactivatePassword }),
+      });
+  
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed");
+      }
+  
+      alert("Account deactivated for 30 days");
+  
+      setShowDeactivateConfirm(false); // close only on success
+      setDeactivatePassword("");
+  
+      localStorage.removeItem("token");
+      window.location.href = "/";
+    } catch (err: any) {
+      setDeactivateError(err.message || "Failed");
+    } finally {
+      setDeactivating(false);
     }
   };
 
@@ -348,6 +380,69 @@ export default function AccountPage() {
     localStorage.removeItem("token");
     window.location.href = "/";
   };
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      if (typeof window === 'undefined') return;
+      
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsAuthenticated(false);
+        window.location.href = "/login";
+        return;
+      }
+
+      setIsAuthenticated(true);
+    };
+
+    checkAuth();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      const fetchData = async () => {
+        await Promise.all([fetchUserProfile(), fetchLocker()]);
+      };
+      fetchData();
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!showChangePinCard) {
+      setStep(1);
+      setCurrentPin("");
+      setVerificationCode("");
+      setNewPin("");
+      setConfirmPin("");
+      setCodeSent(false);
+      setCodeVerified(false);
+    }
+  }, [showChangePinCard]);
+
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   if (loading) {
     return (
@@ -360,10 +455,10 @@ export default function AccountPage() {
   return (
     <>
       <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-        <div className="mx-auto flex h-full w-full flex-col gap-4">
-          <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <Link href="/home" className="flex items-center">
+        <div className="relative mx-auto flex h-full w-full flex-col gap-4">
+          <header className="relative z-50 shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+            <div className="flex items-center justify-between lg:flex-row lg:items-center">
+              <Link href="/home">
                 <Image
                   src="/padalock-logo.png"
                   alt="PadaLock logo"
@@ -374,24 +469,37 @@ export default function AccountPage() {
                 />
               </Link>
 
-              <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
-                {navItems.map((item) => {
-                  const isActive = item.label === "ACCOUNT";
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className={`transition hover:opacity-80 ${
-                        isActive ? "font-extrabold" : ""
-                      }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
+              {/* Hamburger Button */}
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-xl bg-white/20 p-2 text-white transition hover:bg-white/30 lg:hidden"
+                aria-label="Toggle navigation menu"
+              >
+                <span className={`h-0.5 w-6 rounded-full bg-white transition-transform duration-300 ${isMenuOpen ? "translate-y-2 rotate-45" : ""}`} />
+                <span className={`h-0.5 w-6 rounded-full bg-white transition-opacity duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
+                <span className={`h-0.5 w-6 rounded-full bg-white transition-transform duration-300 ${isMenuOpen ? "-translate-y-2 -rotate-45" : ""}`} />
+              </button>
+
+              {/* Desktop Navigation */}
+              <nav className="hidden items-center gap-x-6 text-base font-medium text-white lg:flex lg:text-lg">
+                <Link href="/register" className="transition hover:opacity-80">REGISTER</Link>
+                <Link href="/activity" className="transition hover:opacity-80">ACTIVITY</Link>
+                <Link href="/notifications" className="transition hover:opacity-80">NOTIFICATIONS</Link>
+                {/* Added an underline here since we are on the Account page */}
+                <Link href="/account" className="transition hover:opacity-80 underline decoration-2 underline-offset-4">ACCOUNT</Link>
               </nav>
             </div>
           </header>
+
+          {isMenuOpen && (
+            <nav className="absolute left-4 right-4 top-[75px] z-50 flex flex-col gap-y-1.5 rounded-[1.5rem] bg-white/85 p-4 text-center text-sm font-bold text-[#df4473] shadow-xl backdrop-blur-xl border border-white/30 transition-all lg:hidden">
+              <Link href="/register" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">REGISTER</Link>
+              <Link href="/activity" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">ACTIVITY</Link>
+              <Link href="/notifications" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">NOTIFICATIONS</Link>
+              {/* Active highlight background tint for Account */}
+              <Link href="/account" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition bg-[#df4473]/10 text-[#df4473] active:bg-[#df4473]/20">ACCOUNT</Link>
+            </nav>
+          )}
 
           <section className="min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
             <div className="flex h-full min-h-0 flex-col">
@@ -832,6 +940,38 @@ export default function AccountPage() {
                     </div>
                   )}
 
+                  {/* Account Deactivation Card */}
+                  <div className="rounded-[1.75rem] bg-[#f5d68a]/95 p-4 md:p-5">
+                    <div className="mb-5 flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#b7791f]">
+                        <LockKeyhole className="h-5 w-5" />
+                      </div>
+                      <h2 className="text-xl font-extrabold text-white md:text-2xl">
+                        Account Deactivation
+                      </h2>
+                    </div>
+
+                    <div className="rounded-[1.5rem] bg-white/70 px-4 py-4 md:px-5">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                          <h3 className="text-xl font-extrabold text-[#b7791f] md:text-2xl">
+                            Deactivate Account
+                          </h3>
+                          <p className="text-sm text-[#b7791f] md:text-base">
+                            Your account will be disabled for 30 days. You can log back in to restore it.
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={() => setShowDeactivateConfirm(true)}
+                          className="inline-flex items-center justify-center rounded-full bg-[#b7791f] px-6 py-3 text-base font-extrabold text-white"
+                        >
+                          Deactivate
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Account Deletion Card */}
                   <div className="rounded-[1.75rem] bg-[#f28a92]/95 p-4 md:p-5">
                     <div className="mb-5 flex items-center gap-3">
@@ -919,27 +1059,27 @@ export default function AccountPage() {
                     Are you absolutely sure you want to delete your PadaLock account?
                   </p>
                   <p className="text-sm text-gray-600">
-                    This will permanently delete your account and all associated data including activity records and locker access.
+                    This will permanently delete your account. All associated data including activity records and locker access will be queued for deletion and you will no longer be able to track your parcels. This action cannot be undone.
                   </p>
                 </div>
 
                 <div>
                   <label className="mb-2 block text-sm font-semibold text-gray-700">
-                    Type your email to confirm
+                    Enter your password to confirm
                   </label>
                   <div className="relative">
                     <input
-                      type="email"
-                      value={deleteEmail}
-                      onChange={(e) => setDeleteEmail(e.target.value)}
-                      placeholder="Enter your email address"
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      placeholder="Enter your password"
                       className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 pr-14 text-base text-gray-800 outline-none ring-0 focus:border-2 focus:border-[#ef1f1f] focus:bg-white md:text-lg"
                       disabled={deleting}
                     />
                   </div>
-                  {deleteEmail && deleteEmail !== user?.email && (
-                    <p className="mt-1 text-sm text-[#ef1f1f]">
-                      Email must match exactly
+                  {deleteError && (
+                    <p className="mt-2 text-sm text-red-500 font-semibold">
+                      {deleteError}
                     </p>
                   )}
                 </div>
@@ -948,7 +1088,7 @@ export default function AccountPage() {
                   <button
                     onClick={() => {
                       setShowDeleteConfirm(false);
-                      setDeleteEmail("");
+                      setDeletePassword("");
                     }}
                     disabled={deleting}
                     className="flex-1 rounded-[1.5rem] border-2 border-[#ef1f1f] bg-transparent px-6 py-4 font-extrabold text-[#ef1f1f] transition hover:bg-[#ef1f1f] hover:text-white disabled:opacity-50 md:text-lg"
@@ -957,7 +1097,7 @@ export default function AccountPage() {
                   </button>
                   <button
                     onClick={handleDeleteAccount}
-                    disabled={deleting || deleteEmail !== user?.email}
+                    disabled={deleting || !deletePassword}
                     className="flex-1 inline-flex items-center justify-center rounded-[1.5rem] bg-[#ef1f1f] px-6 py-4 font-extrabold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed md:text-lg"
                   >
                     {deleting ? (
@@ -968,6 +1108,99 @@ export default function AccountPage() {
                     ) : (
                       "Yes, Delete My Account"
                     )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Floating Deactivate Confirmation Modal */}
+      {showDeactivateConfirm && (
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowDeactivateConfirm(false)}
+          />
+          
+          {/* Modal */}
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
+              <div className="mb-6 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b7791f]/20 p-2">
+                    <LockKeyhole className="h-6 w-6 text-[#b7791f]" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-extrabold text-[#b7791f] md:text-3xl">
+                      Deactivate Account
+                    </h3>
+                    <p className="text-sm text-[#b7791f]/80">
+                      This action is temporary
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowDeactivateConfirm(false)}
+                  disabled={deactivating}
+                  className="flex h-10 w-10 items-center justify-center rounded-full text-[#b7791f] hover:bg-[#b7791f]/10"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <p className="mb-4 text-lg font-semibold text-gray-800">
+                    Are you sure you want to deactivate your account?
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Your account will be disabled for 30 days. You can restore it by logging in.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Enter your password to confirm
+                  </label>
+
+                  <input
+                    type="password"
+                    value={deactivatePassword}
+                    onChange={(e) => setDeactivatePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 text-base outline-none focus:border-2 focus:border-[#b7791f]"
+                  />
+                </div>
+                {deactivateError && (
+                  <p className="mt-2 text-sm text-red-500 font-semibold">
+                    {deactivateError}
+                  </p>
+                )}
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <button
+                    onClick={() => {
+                      setShowDeactivateConfirm(false);
+                      setDeactivatePassword("");
+                    }}
+                    disabled={deactivating}
+                    className="flex-1 rounded-[1.5rem] border-2 border-[#b7791f] px-6 py-4 font-extrabold text-[#b7791f] hover:bg-[#b7791f] hover:text-white"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    onClick={handleDeactivateAccount}
+                    disabled={deactivating || !deactivatePassword}
+                    className="flex-1 rounded-[1.5rem] bg-[#b7791f] px-6 py-4 font-extrabold text-white 
+                              transition hover:opacity-90 
+                              disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deactivating ? "Processing..." : "Deactivate"}
                   </button>
                 </div>
               </div>

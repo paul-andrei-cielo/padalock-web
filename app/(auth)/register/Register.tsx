@@ -33,32 +33,43 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 const API_BASE = "/api/parcels";
 
 export default function RegisterPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [trackingNumber, setTrackingNumber] = useState("");
   const [parcelName, setParcelName] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("All");
   const [error, setError] = useState("");
-
+  const [selectedClip, setSelectedClip] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTrackingNumber, setEditTrackingNumber] = useState("");
   const [editParcelName, setEditParcelName] = useState("");
 
   useEffect(() => {
-    fetchParcels();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAuthenticated(false);
+      window.location.href = "/login";
+      return;
+    }
+    
+    setIsAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchParcels();
+    }
+  }, [isAuthenticated]);
 
   const fetchParcels = async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("No authentication token found");
-        setParcels([]);
-        return;
-      }
-
+      setDataLoading(true);
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(API_BASE, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -67,11 +78,6 @@ export default function RegisterPage() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-          localStorage.removeItem("token");
-          window.location.href = "/login";
-          return;
-        }
         throw new Error(errorData.error || "Failed to fetch parcels");
       }
 
@@ -83,11 +89,14 @@ export default function RegisterPage() {
       setError(err.message || "Failed to load parcels");
       setParcels([]);
     } finally {
+      setDataLoading(false);
       setLoading(false);
     }
   };
 
-  const handleRegister = async () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!trackingNumber.trim()) {
       setError("Please enter a tracking number");
       return;
@@ -97,7 +106,8 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(API_BASE, {
         method: "POST",
         headers: {
@@ -145,7 +155,8 @@ export default function RegisterPage() {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "PUT",
         headers: {
@@ -186,7 +197,8 @@ export default function RegisterPage() {
     if (!confirm(`Delete ${trackingNumber}?`)) return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token")!;
+      
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "DELETE",
         headers: {
@@ -222,7 +234,7 @@ export default function RegisterPage() {
       : status;
   };
 
-  const formatDate = (dateString: string | null | undefined): string => {
+  const formatDate = (dateString?: string | null): string => {
     if (!dateString) return "N/A";
 
     try {
@@ -247,37 +259,85 @@ export default function RegisterPage() {
     `.trim();
   };
 
+  if (isAuthenticated === null) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Checking authentication...
+        </div>
+      </main>
+    );
+  }
+
+  if (isAuthenticated === false) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+            Looks like you're not logged in
+          </div>
+          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
+            Redirecting to login...
+          </div>
+        </div>
+      </main>
+    );
+  }
+
+  if (loading) {
+    return (
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
+        <div className="text-white text-xl font-extrabold animate-pulse">Loading register...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-      <div className="mx-auto flex h-full w-full flex-col gap-4">
-        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <Link href="/home" className="flex items-center">
+      <div className="relative mx-auto flex h-full w-full flex-col gap-4">
+        <header className="relative z-50 shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+          <div className="flex items-center justify-between lg:flex-row lg:items-center">
+            <Link href="/home">
               <Image
                 src="/padalock-logo.png"
                 alt="PadaLock logo"
                 width={340}
                 height={70}
-                className="h-auto w-[150px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
+                className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
                 priority
               />
             </Link>
 
-            <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
-              {navItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`transition hover:opacity-80 ${
-                    item.href === "/register" ? "font-bold" : ""
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
+            {/* Hamburger Button */}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex h-10 w-10 flex-col items-center justify-center gap-1.5 rounded-xl bg-white/20 p-2 text-white transition hover:bg-white/30 lg:hidden"
+              aria-label="Toggle navigation menu"
+            >
+              <span className={`h-0.5 w-6 rounded-full bg-white transition-transform duration-300 ${isMenuOpen ? "translate-y-2 rotate-45" : ""}`} />
+              <span className={`h-0.5 w-6 rounded-full bg-white transition-opacity duration-300 ${isMenuOpen ? "opacity-0" : ""}`} />
+              <span className={`h-0.5 w-6 rounded-full bg-white transition-transform duration-300 ${isMenuOpen ? "-translate-y-2 -rotate-45" : ""}`} />
+            </button>
+
+            {/* Desktop Navigation */}
+            <nav className="hidden items-center gap-x-6 text-base font-medium text-white lg:flex lg:text-lg">
+              <Link href="/register" className="transition hover:opacity-80 underline decoration-2 underline-offset-4">REGISTER</Link>
+              <Link href="/activity" className="transition hover:opacity-80">ACTIVITY</Link>
+              <Link href="/notifications" className="transition hover:opacity-80">NOTIFICATIONS</Link>
+              <Link href="/account" className="transition hover:opacity-80">ACCOUNT</Link>
             </nav>
           </div>
         </header>
+
+        {isMenuOpen && (
+          <nav className="absolute left-4 right-4 top-[75px] z-50 flex flex-col gap-y-1.5 rounded-[1.5rem] bg-white/85 p-4 text-center text-sm font-bold text-[#df4473] shadow-xl backdrop-blur-xl border border-white/30 transition-all lg:hidden">
+            <Link href="/register" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition bg-[#df4473]/10 text-[#df4473] active:bg-[#df4473]/20">REGISTER</Link>
+            <Link href="/activity" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">ACTIVITY</Link>
+            <Link href="/notifications" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">NOTIFICATIONS</Link>
+            {/* Active highlight background tint for Account */}
+            <Link href="/account" onClick={() => setIsMenuOpen(false)} className="rounded-xl py-2.5 transition hover:bg-[#df4473]/10 active:bg-[#df4473]/20">ACCOUNT</Link>
+          </nav>
+        )}        
 
         <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
           <div className="flex min-h-0 flex-col rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
@@ -294,6 +354,12 @@ export default function RegisterPage() {
               {error && (
                 <div className="mt-3 rounded-xl bg-red-400/50 p-3 text-sm text-white">
                   {error}
+                  <button
+                    onClick={fetchParcels}
+                    className="ml-2 inline-flex items-center gap-1 text-xs underline hover:no-underline"
+                  >
+                    Retry
+                  </button>
                 </div>
               )}
 
@@ -317,7 +383,12 @@ export default function RegisterPage() {
 
             <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
               <div className="flex flex-col gap-3">
-                {filteredParcels.length === 0 ? (
+                {dataLoading ? (
+                  <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">
+                    <div className="animate-spin h-8 w-8 border-2 border-[#de9aae]/50 border-t-[#de9aae] rounded-full mx-auto mb-4"></div>
+                    <p className="text-white">Loading parcels...</p>
+                  </div>
+                ) : filteredParcels.length === 0 ? (
                   <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">
                     <div>
                       <p className="text-lg font-bold text-[#de9aae] md:text-xl">
@@ -471,40 +542,49 @@ export default function RegisterPage() {
               </h2>
             </div>
 
-            <div className="mt-6">
-              <label className="mb-2 block text-base font-medium text-white md:text-lg">
-                Tracking number
-              </label>
-              <input
-                type="text"
-                placeholder="Enter your parcel's tracking number"
-                className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] md:h-14 md:text-base"
-                value={trackingNumber}
-                onChange={(e) => setTrackingNumber(e.target.value)}
-                disabled={loading}
-              />
+            <form className="mt-6 space-y-4" onSubmit={handleRegister}>
+              <div>
+                <label className="mb-2 block text-base font-medium text-white md:text-lg">
+                  Tracking number *
+                </label>
+                <input
+                  id="trackingNumber"
+                  type="text"
+                  placeholder="Enter your parcel's tracking number"
+                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-white/50 md:h-14 md:text-base"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  disabled={loading}
+                  required
+                  autoComplete="off"
+                />
+              </div>
 
-              <label className="mb-2 mt-4 block text-base font-medium text-white md:text-lg">
-                Parcel name (optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g., Birthday Gift, Documents"
-                className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] md:h-14 md:text-base"
-                value={parcelName}
-                onChange={(e) => setParcelName(e.target.value)}
-                disabled={loading}
-              />
+              <div>
+                <label className="mb-2 block text-base font-medium text-white md:text-lg">
+                  Parcel name (optional)
+                </label>
+                <input
+                  id="parcelName"
+                  type="text"
+                  placeholder="e.g., Birthday Gift, Documents"
+                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-white/50 md:h-14 md:text-base"
+                  value={parcelName}
+                  onChange={(e) => setParcelName(e.target.value)}
+                  disabled={loading}
+                  autoComplete="off"
+                />
+              </div>
 
               <button
-                type="button"
-                onClick={handleRegister}
+                type="submit"
                 disabled={loading || !trackingNumber.trim()}
-                className="mt-6 h-12 w-full rounded-full bg-[#df4473] px-6 text-base font-extrabold text-white transition hover:scale-[1.01] disabled:opacity-50 md:h-14 md:text-xl"
+                className="h-12 w-full rounded-full bg-[#df4473] px-6 text-base font-extrabold text-white transition hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed md:h-14 md:text-xl"
               >
                 {loading ? "Registering..." : "Register"}
               </button>
-            </div>
+            </form>
+
           </div>
         </section>
       </div>
