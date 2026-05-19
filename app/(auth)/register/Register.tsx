@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
@@ -47,6 +48,18 @@ export default function RegisterPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTrackingNumber, setEditTrackingNumber] = useState("");
   const [editParcelName, setEditParcelName] = useState("");
+  
+  const startEdit = (parcel: Parcel) => {
+  setEditingId(parcel._id);
+  setEditTrackingNumber(parcel.trackingNumber);
+  setEditParcelName(parcel.parcelName);
+  };
+
+const cancelEdit = () => {
+  setEditingId(null);
+  setEditTrackingNumber("");
+  setEditParcelName("");
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -94,129 +107,143 @@ export default function RegisterPage() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!trackingNumber.trim()) {
-      setError("Please enter a tracking number");
-      return;
+const handleRegister = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!trackingNumber.trim()) {
+    setError("Please enter a tracking number");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const token = localStorage.getItem("token")!;
+
+    const res = await fetch(API_BASE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        trackingNumber: trackingNumber.trim(),
+        parcelName: parcelName.trim() || "Parcel",
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to register parcel");
     }
 
-    setLoading(true);
-    setError("");
+    setTrackingNumber("");
+    setParcelName("");
+    await fetchParcels();
 
-    try {
-      const token = localStorage.getItem("token")!;
-      
-      const res = await fetch(API_BASE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          trackingNumber: trackingNumber.trim(),
-          parcelName: parcelName.trim() || "Parcel",
-        }),
-      });
+    // ── ADD THIS ──
+    toast.success("Parcel Registered", {
+      description: `Tracking number "${trackingNumber.trim()}" has been registered successfully.`,
+    });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to register parcel");
-      }
+  } catch (err: any) {
+    console.error("Error registering parcel:", err);
+    setError(err.message || "Failed to register parcel");
+    toast.error("Registration Failed", {
+      description: err.message || "Failed to register parcel.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
-      setTrackingNumber("");
-      setParcelName("");
-      await fetchParcels();
-    } catch (err: any) {
-      console.error("Error registering parcel:", err);
-      setError(err.message || "Failed to register parcel");
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleUpdate = async (parcelId: string) => {
+  if (!editTrackingNumber.trim()) {
+    setError("Please enter a tracking number");
+    return;
+  }
 
-  const startEdit = (parcel: Parcel) => {
-    setEditingId(parcel._id);
-    setEditTrackingNumber(parcel.trackingNumber);
-    setEditParcelName(parcel.parcelName);
-  };
+  try {
+    const token = localStorage.getItem("token")!;
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditTrackingNumber("");
-    setEditParcelName("");
-  };
+    const res = await fetch(`${API_BASE}/${parcelId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        trackingNumber: editTrackingNumber.trim(),
+        parcelName: editParcelName.trim() || "Parcel",
+      }),
+    });
 
-  const handleUpdate = async (parcelId: string) => {
-    if (!editTrackingNumber.trim()) {
-      setError("Please enter a tracking number");
-      return;
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to update parcel");
     }
 
-    try {
-      const token = localStorage.getItem("token")!;
-      
-      const res = await fetch(`${API_BASE}/${parcelId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          trackingNumber: editTrackingNumber.trim(),
-          parcelName: editParcelName.trim() || "Parcel",
-        }),
-      });
+    setParcels((prev) =>
+      prev.map((p) =>
+        p._id === parcelId
+          ? {
+              ...p,
+              trackingNumber: editTrackingNumber.trim(),
+              parcelName: editParcelName.trim() || "Parcel",
+            }
+          : p
+      )
+    );
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to update parcel");
-      }
+    cancelEdit();
 
-      setParcels((prev) =>
-        prev.map((p) =>
-          p._id === parcelId
-            ? {
-                ...p,
-                trackingNumber: editTrackingNumber.trim(),
-                parcelName: editParcelName.trim() || "Parcel",
-              }
-            : p
-        )
-      );
+    // ── ADD THIS ──
+    toast.success("Parcel Updated", {
+      description: `Tracking number has been updated to "${editTrackingNumber.trim()}".`,
+    });
 
-      cancelEdit();
-    } catch (err: any) {
-      console.error("Error updating parcel:", err);
-      setError(err.message || "Failed to update parcel");
+  } catch (err: any) {
+    console.error("Error updating parcel:", err);
+    setError(err.message || "Failed to update parcel");
+    toast.error("Update Failed", {
+      description: err.message || "Failed to update parcel.",
+    });
+  }
+};
+
+const handleDelete = async (parcelId: string, trackingNumber: string) => {
+  if (!confirm(`Delete ${trackingNumber}?`)) return;
+
+  try {
+    const token = localStorage.getItem("token")!;
+
+    const res = await fetch(`${API_BASE}/${parcelId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error("Failed to delete parcel");
     }
-  };
 
-  const handleDelete = async (parcelId: string, trackingNumber: string) => {
-    if (!confirm(`Delete ${trackingNumber}?`)) return;
+    await fetchParcels();
 
-    try {
-      const token = localStorage.getItem("token")!;
-      
-      const res = await fetch(`${API_BASE}/${parcelId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    // ── ADD THIS ──
+    toast.success("Parcel Deleted", {
+      description: `Tracking number "${trackingNumber}" has been removed.`,
+    });
 
-      if (!res.ok) {
-        throw new Error("Failed to delete parcel");
-      }
-
-      await fetchParcels();
-    } catch (err) {
-      console.error("Delete error:", err);
-      alert("Failed to delete parcel");
-      await fetchParcels();
-    }
-  };
+  } catch (err) {
+    console.error("Delete error:", err);
+    toast.error("Delete Failed", {
+      description: "Failed to delete parcel. Please try again.",
+    });
+    await fetchParcels();
+  }
+};
 
   const filteredParcels = parcels.filter((parcel) => {
     if (activeFilter === "All") return true;
