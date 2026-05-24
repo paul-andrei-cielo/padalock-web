@@ -91,30 +91,22 @@ export default function ActivityPage() {
   const [selectedClip, setSelectedClip] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setIsAuthenticated(false);
-      window.location.href = "/login";
-      return;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setIsAuthenticated(false);
+        window.location.href = "/login";
+        return;
+      }
+      setIsAuthenticated(true);
     }
-    
-    setIsAuthenticated(true);
   }, []);
-
-  useEffect(() => {
-    if (isAuthenticated === true) {
-      fetchData();
-    }
-  }, [isAuthenticated]);
-
-  const fetchData = async () => {
-    await Promise.all([fetchParcels(), fetchLogs()]);
-  };
 
   const fetchParcels = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem("token")!;
+      const token = localStorage.getItem("token");
+      if (!token) return;
       
       const res = await fetch(API_BASE, {
         headers: { Authorization: `Bearer ${token}` },
@@ -128,9 +120,13 @@ export default function ActivityPage() {
       const data = await res.json();
       setParcels(Array.isArray(data) ? data : []);
       setError("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching parcels:", err);
-      setError(err.message || "Failed to load parcels");
+      if (err instanceof Error) {
+        setError(err.message || "Failed to load parcels");
+      } else {
+        setError("Failed to load parcels");
+      }
       setParcels([]);
     } finally {
       setLoading(false);
@@ -140,7 +136,8 @@ export default function ActivityPage() {
   const fetchLogs = async () => {
     try {
       setLogsLoading(true);
-      const token = localStorage.getItem("token")!;
+      const token = localStorage.getItem("token");
+      if (!token) return;
       
       const res = await fetch(LOGS_API, { headers: { Authorization: `Bearer ${token}` } });
       
@@ -152,9 +149,11 @@ export default function ActivityPage() {
       const data = await res.json();
       setLogs(Array.isArray(data) ? data : []);
       setError("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error fetching logs:", err);
-      setError(err.message || "Failed to load logs");
+      if (err instanceof Error) {
+        setError(err.message || "Failed to load logs");
+      }
     } finally {
       setLogsLoading(false);
     }
@@ -162,7 +161,8 @@ export default function ActivityPage() {
 
   const fetchLocker = async () => {
     try {
-      const token = localStorage.getItem("token")!;
+      const token = localStorage.getItem("token");
+      if (!token) return;
       const res = await fetch(LOCKER_API, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const data = await res.json();
@@ -172,6 +172,16 @@ export default function ActivityPage() {
       console.error("Error fetching locker:", err);
     }
   };
+
+  const fetchData = async () => {
+    await Promise.all([fetchParcels(), fetchLogs()]);
+  };
+
+  useEffect(() => {
+    if (isAuthenticated === true) {
+      fetchData();
+    }
+  }, [isAuthenticated]);
 
   const handleViewModeChange = (mode: ViewMode) => {
     setViewMode(mode);
@@ -222,7 +232,7 @@ export default function ActivityPage() {
   }, [activeFilter, activities]);
 
   const formatLogEvent = (log: Log) => {
-    if (!log.success) return "Failed PIN attempt";
+    if (!log.success) return `Failed PIN attempt (Details: ${log.details || "None"})`;
     switch (log.action) {
       case "PIN_ENTERED": return log.actor === "user" ? "Valid PIN entered" : "Courier access granted";
       case "LID_OPENED": return log.actor === "user" ? "Lid opened (PIN)" : "Lid opened (Courier)";
@@ -269,7 +279,7 @@ export default function ActivityPage() {
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
-            Looks like you're not logged in
+            Looks like you&apos;re not logged in
           </div>
           <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
             Redirecting to login...
@@ -290,6 +300,7 @@ export default function ActivityPage() {
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
       <div className="mx-auto flex h-full w-full flex-col gap-4">
+        
         {/* HEADER */}
         <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -335,18 +346,158 @@ export default function ActivityPage() {
             </div>
           ) : (
             <div className="flex h-full min-h-0 flex-col">
-              <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
-                <div className="flex flex-col gap-4 pb-1">
-                  <div className="text-white text-center py-12">
-                    Activity content will go here...
-                  </div>
+              
+              {/* Tab Toggles */}
+              <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h1 className="text-2xl font-extrabold text-white md:text-3xl">Activity</h1>
+                  {viewMode === "AUDIT_LOGS" && locker?.lockout && (
+                    <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-red-500/90 px-3 py-1 text-xs font-bold text-white uppercase animate-pulse">
+                      ⚠️ Locker Brute-Force Lockout Active
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex w-full gap-3 md:w-auto md:min-w-[420px]">
+                  <button
+                    onClick={() => handleViewModeChange("MAIN_ACTIVITY")}
+                    className={`flex-1 rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
+                      viewMode === "MAIN_ACTIVITY" ? "bg-white text-[#de517e]" : "bg-[#de517e] text-white hover:opacity-90"
+                    }`}
+                  >
+                    Main Activity
+                  </button>
+                  <button
+                    onClick={() => handleViewModeChange("AUDIT_LOGS")}
+                    className={`flex-1 rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
+                      viewMode === "AUDIT_LOGS" ? "bg-white text-[#de517e]" : "bg-[#de517e] text-white hover:opacity-90"
+                    }`}
+                  >
+                    Audit Logs
+                  </button>
                 </div>
               </div>
+
+              {/* View Rendering Segment */}
+              {viewMode === "MAIN_ACTIVITY" ? (
+                <>
+                  <div className="mb-5 rounded-[1.75rem] bg-white/35 p-2 shrink-0">
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                      {[
+                        { label: "All", value: "ALL" },
+                        { label: "Pending", value: "PENDING" },
+                        { label: "Delivered", value: "DELIVERED" },
+                        { label: "Retrieved", value: "RETRIEVED" },
+                      ].map((filter) => {
+                        const isActive = activeFilter === filter.value;
+                        return (
+                          <button
+                            key={filter.value}
+                            onClick={() => setActiveFilter(filter.value as FilterStatus)}
+                            className={`rounded-full px-4 py-3 text-sm font-extrabold transition md:text-lg ${
+                              isActive ? "bg-[#dd96ad] text-white" : "text-[#df8daa] hover:bg-white/50"
+                            }`}
+                          >
+                            {filter.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className={`flex-1 min-h-0 overflow-y-auto pr-1 ${scrollbarClass}`}>
+                    <div className="flex flex-col gap-4">
+                      {filteredActivities.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex flex-col gap-4 rounded-[1.75rem] bg-white/45 px-5 py-5 transition hover:bg-white/55 md:flex-row md:items-center md:justify-between"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <h2 className="truncate text-xl font-extrabold text-[#df8daa] md:text-2xl">
+                              {item.trackingNumber}
+                            </h2>
+                            {item.parcelName && (
+                              <p className="truncate text-base font-semibold text-[#df8daa]">
+                                {item.parcelName}
+                              </p>
+                            )}
+                            <p className="text-sm text-[#df8daa] md:text-base">
+                              {item.date} | {item.time}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
+                            {item.hasClip && item.clipUrl && (
+                              <button
+                                onClick={() => setSelectedClip(item.clipUrl!)}
+                                className="flex h-12 w-12 items-center justify-center rounded-full bg-[#df8daa] text-white transition hover:scale-105 hover:bg-[#de517e]"
+                                title="View Security Recording"
+                              >
+                                📹
+                              </button>
+                            )}
+                            <span
+                              className={`inline-flex min-w-[140px] items-center justify-center rounded-full px-5 py-3 text-base font-extrabold md:min-w-[160px] ${
+                                statusStyles[item.status].pill
+                              }`}
+                            >
+                              {statusStyles[item.status].label}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+
+                      {filteredActivities.length === 0 && (
+                        <div className="flex min-h-[220px] items-center justify-center rounded-[1.75rem] bg-white/35 px-6 py-8">
+                          <p className="text-center text-base font-medium text-[#df8daa] md:text-lg">
+                            No registered parcels found.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                /* Hardware Audit Table Interface */
+                <div className="flex-1 min-h-0 flex flex-col rounded-[2rem] bg-white/20 p-3">
+                  <div className="mb-3 grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-[1.5rem] bg-white/35 px-5 py-4 text-sm font-extrabold uppercase tracking-wide text-[#de517e] md:px-6 md:text-base">
+                    <p>Date</p>
+                    <p>Time</p>
+                    <p>Event</p>
+                  </div>
+
+                  <div className={`flex-1 min-h-0 space-y-3 overflow-y-auto pr-1 ${scrollbarClass}`}>
+                    {logsLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#de517e]"></div>
+                        <span className="ml-2 text-white/80">Syncing telemetry logs...</span>
+                      </div>
+                    ) : formattedAuditLogs.length === 0 ? (
+                      <div className="flex min-h-[200px] items-center justify-center rounded-[1.5rem] bg-white/30">
+                        <p className="text-center text-base font-medium text-white/80">
+                          No audit logs available yet.
+                        </p>
+                      </div>
+                    ) : (
+                      formattedAuditLogs.map((log) => (
+                        <div
+                          key={log.id}
+                          className="grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-[1.5rem] bg-white/40 px-5 py-4 text-[#d96f92] shadow-[0_4px_16px_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:bg-white/50 md:px-6"
+                        >
+                          <p className="text-sm font-medium md:text-base">{log.date}</p>
+                          <p className="text-sm font-medium md:text-base">{log.time}</p>
+                          <p className="text-sm font-semibold md:text-base truncate">{log.event}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
 
-        {/* Video Modal */}
+        {/* SECURITY VIDEO CLIP MODAL */}
         {selectedClip && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={() => setSelectedClip(null)}>
             <div className="bg-white rounded-2xl p-6 max-w-4xl w-full mx-4 max-h-[90vh] relative" onClick={(e) => e.stopPropagation()}>
@@ -355,10 +506,10 @@ export default function ActivityPage() {
                 className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white rounded-full w-12 h-12 flex items-center justify-center text-2xl font-bold text-gray-800 shadow-lg transition hover:scale-110"
                 aria-label="Close video"
               >
-                ✕
+                &times;
               </button>
-              <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl">
-                <video src={selectedClip} controls autoPlay className="w-full h-full object-contain" onError={() => setSelectedClip(null)} />
+              <div className="w-full aspect-video rounded-xl overflow-hidden shadow-2xl bg-black">
+                <video src={selectedClip} controls autoPlay className="w-full h-full object-contain" />
               </div>
             </div>
           </div>
