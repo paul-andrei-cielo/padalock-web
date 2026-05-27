@@ -1,25 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
+import mongoose from 'mongoose';
 import { connectDB } from '@/lib/mongodb';
 import Log from '@/models/Log';
 import { getUserFromRequest } from '@/lib/auth';
-import Locker from '@/models/Locker';
 
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
-    
-    const user = getUserFromRequest(request);
-    const userId = user.id || user.userId;
 
-    const logs = await Log.find({
-      userId
-    })
-    .sort({ timestamp: -1 })
-    .limit(50);
+    const user = getUserFromRequest(request);
+
+    const userId = new mongoose.Types.ObjectId(
+      user.id || user.userId
+    );
+
+    const logs = await Log.find({ userId })
+      .sort({ createdAt: -1 })
+      .limit(50);
+
+    console.log("Fetched logs:", logs.length);
 
     return NextResponse.json(logs);
+
   } catch (error: any) {
     console.error('Error fetching logs:', error);
-    return NextResponse.json({ error: error.message || 'Failed to fetch logs' }, { status: 500 });
+
+    return NextResponse.json(
+      { error: error.message || 'Failed to fetch logs' },
+      { status: 500 }
+    );
   }
 }
