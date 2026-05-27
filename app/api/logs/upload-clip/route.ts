@@ -43,17 +43,21 @@ export async function POST(req: NextRequest) {
       { new: true }
     );
 
-    await Log.findOneAndUpdate(
-      {
-        details: { $regex: trackingNumber }
-      },
-      {
-        cameraRecording: result.secure_url
-      },
-      {
-        sort: { createdAt: -1 }
-      }
-    );
+    try {
+      await Log.findOneAndUpdate(
+        {
+          action: { $in: ["RETRIEVE", "DELIVERY_VALID"] }
+        },
+        {
+          cameraRecording: result.secure_url
+        },
+        {
+          sort: { createdAt: -1 }
+        }
+      );
+    } catch (err) {
+      console.error("Log update failed:", err);
+    }
 
     return NextResponse.json({
       message: "Video uploaded successfully",
