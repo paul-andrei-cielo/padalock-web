@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type NotificationType = "DELIVERED" | "FAILED_PIN" | "RETRIEVED" | "GENERAL";
 
@@ -31,10 +31,11 @@ const scrollbarClass =
   "[&::-webkit-scrollbar-thumb]:rounded-full " +
   "hover:[&::-webkit-scrollbar-thumb]:bg-[#cf6c91]";
 
+  
 const titleStyles: Record<NotificationType, string> = {
   DELIVERED: "text-[#de517e]",
-  FAILED_PIN: "text-[#e39ab3]",
-  RETRIEVED: "text-[#e39ab3]",
+  RETRIEVED: "text-[#de517e]",
+  FAILED_PIN: "text-[#c0392b]",
   GENERAL: "text-[#de517e]",
 };
 
@@ -43,7 +44,7 @@ export default function NotificationsPage() {
 
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+  const [lastViewed, setLastViewed] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -57,10 +58,29 @@ export default function NotificationsPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated === true) {
-      fetchNotifications();
-    }
-  }, [isAuthenticated]);
+  if (isAuthenticated === true) {
+    return () => {
+      localStorage.setItem(
+        "notificationsLastViewed",
+        Date.now().toString()
+      );
+    };
+  }
+}, [isAuthenticated]);
+
+
+  useEffect(() => {
+  if (isAuthenticated === true) {
+
+    const viewed =
+      Number(localStorage.getItem("notificationsLastViewed")) || 0;
+
+        setLastViewed(viewed);
+
+        fetchNotifications();
+      }
+    }, [isAuthenticated]);
+
 
   const fetchNotifications = async () => {
     try {
@@ -79,28 +99,51 @@ export default function NotificationsPage() {
       }
 
       const data = await res.json();
+      const viewed =
+        Number(localStorage.getItem("notificationsLastViewed")) || 0;
 
-      const mappedNotifications: NotificationItem[] = data.map((log: any) => {
+      const mappedNotifications: NotificationItem[] = data
+        .map((log: any) => {
         let type: NotificationType = "GENERAL";
         let title = "Activity";
         let message = log.details || "New activity recorded";
 
-        if (log.action === "PARCEL_DETECTED") {
+        switch (log.action) {
+
+        case "DELIVERY_VALID":
           type = "DELIVERED";
           title = "Parcel Delivered";
-          message = "A parcel has been detected in your PadaBox";
-        } else if (log.action === "LID_OPENED") {
+          message = "A parcel was successfully delivered.";
+          break;
+
+        case "RETRIEVE":
           type = "RETRIEVED";
           title = "Parcel Retrieved";
-          message = "You opened your PadaBox";
-        } else if (
-          (log.action === "PIN_ENTERED" && !log.success) ||
-          log.action === "PIN_LOCKOUT"
-        ) {
+          message = "A parcel was retrieved from the locker.";
+          break;
+
+        case "INVALID_CODE":
           type = "FAILED_PIN";
-          title = "Failed PIN Attempt";
-          message = "An incorrect PIN was entered on your PadaBox";
-        }
+          title = "Invalid PIN Attempt";
+          message = "Someone entered an incorrect PIN.";
+          break;
+
+        case "PIN_LOCKOUT":
+          type = "FAILED_PIN";
+          title = "Locker Lockout";
+          message = "Too many incorrect PIN attempts were detected.";
+          break;
+
+        case "LID_OPEN_TOO_LONG":
+          type = "FAILED_PIN";
+          title = "Locker Left Open";
+          message = "The locker remained open for too long.";
+          break;
+
+        default:
+          return null;
+      }
+      
 
         const dateObj = new Date(log.timestamp);
         const dateStr = dateObj.toLocaleDateString("en-US", {
@@ -121,11 +164,15 @@ export default function NotificationsPage() {
           date: dateStr,
           time: timeStr,
           type,
-          unread: false,
+          unread:
+          new Date(log.timestamp).getTime() > viewed,
         };
-      });
-
+      })
+      .filter(Boolean) as NotificationItem[];
+      
       setNotifications(mappedNotifications);
+
+
     } catch (error) {
       console.error("Error fetching notifications:", error);
     } finally {
@@ -133,11 +180,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const filteredNotifications = useMemo(() => {
-    return showUnreadOnly
-      ? notifications.filter((item) => item.unread)
-      : notifications;
-  }, [showUnreadOnly, notifications]);
+  
 
   if (isAuthenticated === null) {
     return (
@@ -182,15 +225,30 @@ export default function NotificationsPage() {
 
             <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
               {navItems.map((item) => (
-                <Link
-                  key={item.label}
-                  href={item.href}
-                  className={`transition hover:opacity-80 ${
-                    item.label === "NOTIFICATIONS" ? "font-extrabold" : ""
-                  }`}
-                >
-                  {item.label}
-                </Link>
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`transition hover:opacity-80 ${
+                      item.label === "NOTIFICATIONS" ? "font-extrabold" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {item.label}
+
+                      {item.label === "NOTIFICATIONS" &&
+                        notifications.filter(
+                            (n) => n.type === "FAILED_PIN" && n.unread
+                          ).length > 0 && (
+                          <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                            {
+                              notifications.filter(
+                              (n) => n.type === "FAILED_PIN" && n.unread
+                            ).length
+                            }
+                          </span>
+                        )}
+                    </div>
+                  </Link>
               ))}
             </nav>
           </div>
@@ -202,30 +260,6 @@ export default function NotificationsPage() {
               <h1 className="text-2xl font-extrabold text-white md:text-3xl">
                 Notifications
               </h1>
-
-              <div className="flex w-full flex-nowrap gap-3 lg:w-auto lg:min-w-[360px]">
-                <button
-                  onClick={() => setShowUnreadOnly(false)}
-                  className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
-                    !showUnreadOnly
-                      ? "bg-white text-[#de517e]"
-                      : "bg-[#de517e] text-white hover:opacity-90"
-                  }`}
-                >
-                  All Notifications
-                </button>
-
-                <button
-                  onClick={() => setShowUnreadOnly(true)}
-                  className={`flex-1 whitespace-nowrap rounded-full px-6 py-2.5 text-sm font-bold transition md:text-base ${
-                    showUnreadOnly
-                      ? "bg-white text-[#de517e]"
-                      : "bg-[#de517e] text-white hover:opacity-90"
-                  }`}
-                >
-                  Unread
-                </button>
-              </div>
             </div>
 
             <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
@@ -235,7 +269,7 @@ export default function NotificationsPage() {
                     Loading notifications...
                   </p>
                 </div>
-              ) : filteredNotifications.length === 0 ? (
+              ) : notifications.length === 0 ? (
                 <div className="flex min-h-[220px] items-center justify-center rounded-[2rem] bg-white/30 px-6 py-8">
                   <p className="text-center text-base font-medium text-[#df8daa] md:text-lg">
                     No notifications to show.
@@ -243,18 +277,29 @@ export default function NotificationsPage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {filteredNotifications.map((item) => (
+                  {notifications.map((item) => (
                     <div
-                      key={item.id}
-                      className="rounded-[2rem] bg-white/35 px-5 py-5 backdrop-blur-sm transition hover:bg-white/45 md:px-8 md:py-7"
-                    >
+                        key={item.id}
+                        className={`rounded-[2rem] px-5 py-5 backdrop-blur-sm transition md:px-8 md:py-7 ${
+                          item.type === "FAILED_PIN"
+                            ? item.unread
+                              ? "bg-red-200 border-2 border-red-500"
+                              : "bg-red-100/70 border border-red-300"
+                            : item.unread
+                              ? "bg-white/60"
+                              : "bg-white/35"
+                        }`}
+                      >
                       <div className="flex flex-col gap-3">
                         <div className="flex items-start justify-between gap-4">
-                          <h2
-                            className={`text-2xl font-extrabold md:text-3xl lg:text-3xl ${titleStyles[item.type]}`}
-                          >
-                            {item.title}
-                          </h2>
+                          <div className="flex items-center gap-3">
+
+                              <h2
+                                className={`text-2xl font-extrabold md:text-3xl lg:text-3xl ${titleStyles[item.type]}`}
+                              >
+                                {item.title}
+                              </h2>
+                            </div>
                           {item.unread && (
                             <span className="mt-1 inline-flex h-3 w-3 shrink-0 rounded-full bg-[#de517e]" />
                           )}

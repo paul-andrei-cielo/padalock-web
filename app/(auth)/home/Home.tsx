@@ -5,6 +5,16 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+const eventColors: Record<string, { bg: string; text: string }> = {
+  Delivered: {
+    bg: "bg-[#b8d8c7]",
+    text: "text-[#0d7a43]",
+  },
+  Retrieved: {
+    bg: "bg-[#cfe8ec]",
+    text: "text-[#1383a3]",
+  },
+};
 interface Parcel {
   _id: string;
   trackingNumber: string;
@@ -89,26 +99,32 @@ export default function HomePage() {
 
       const parcels: Parcel[] = await response.json();
       const recentEvents = parcels
-        .filter(p => p.deliveryDate || p.retrievedDate)
-        .map(p => {
-          if (p.status === "DELIVERED" && p.deliveryDate) {
-            return {
-              type: "Delivered",
-              date: new Date(p.deliveryDate),
-            };
-          }
-          if (p.status === "RETRIEVED" && p.retrievedDate) {
-            return {
-              type: "Retrieved",
-              date: new Date(p.retrievedDate),
-            };
-          }
-          return null;
-        })
-        .filter(Boolean)
-        .sort((a: any, b: any) => b.date - a.date)
-        .slice(0, 5);
+        .flatMap((p) => {
+          const events = [];
 
+          if (p.deliveryDate) {
+            events.push({
+              type: "Delivered",
+              parcelName: p.parcelName,
+              trackingNumber: p.trackingNumber,
+              date: new Date(p.deliveryDate),
+            });
+          }
+
+          if (p.retrievedDate) {
+            events.push({
+              type: "Retrieved",
+              parcelName: p.parcelName,
+              trackingNumber: p.trackingNumber,
+              date: new Date(p.retrievedDate),
+            });
+          }
+
+          return events;
+        })
+        .sort((a: any, b: any) => b.date.getTime() - a.date.getTime())
+        .slice(0, 5);
+      console.log(recentEvents);  
       setRecent(recentEvents);
 
       const stats = parcels.reduce(
@@ -317,26 +333,48 @@ export default function HomePage() {
               Recent
             </h2>
 
-            <div className={`flex flex-1 items-center justify-center overflow-y-auto rounded-[1.5rem] bg-white/35 p-3 pr-2 ${scrollbarClass}`}>
-              <div className="flex flex-col gap-3">
+            <div className={`flex-1 overflow-y-auto rounded-[1.5rem] bg-white/35 p-3 pr-2 ${scrollbarClass}`}>
+              <div className="flex flex-col gap-3 w-full">
                 {recent.length > 0 ? (
-                recent.map((item, index) => (
+                recent.map((item, index) => {
+
+                const colors =
+                  eventColors[item.type] || {
+                    bg: "bg-[#edd9cb]",
+                    text: "text-[#d46800]",
+                  };
+
+                return (
                   <div
                     key={index}
-                    className="flex items-start gap-3 rounded-[1.25rem] bg-white/55 px-4 py-3"
+                    className="flex w-full items-start gap-3 rounded-[1.25rem] bg-white/55 px-4 py-3"
                   >
-                    <span className="text-xl text-[#df4473]">📦</span>
+                    <div
+                      className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${colors.bg}`}
+                    >
+                      <span className={`text-2xl md:text-3xl ${colors.text}`}>  
+                      {item.type === "Delivered" ? "📥" : "📤"}
+                    </span>
+                    </div>
 
-                    <div className="min-w-0 text-[#df4473]">
-                      <p className="text-sm font-extrabold md:text-base">
+                    <div className="min-w-0">
+                      <p className={`text-sm font-extrabold md:text-base ${colors.text}`}>
                         {item.type}
                       </p>
-                      <p className="text-xs md:text-sm">
+
+                      <p className="text-xs md:text-sm text-[#df4473]/80">
+                        {item.parcelName && item.parcelName !== "Parcel"
+                          ? item.parcelName
+                          : `Tracking #${item.trackingNumber}`}
+                      </p>
+
+                      <p className="text-xs text-[#df4473]/60">
                         {item.date.toLocaleString()}
                       </p>
                     </div>
                   </div>
-                ))
+                );
+              })
               ) : (
                 //Added Empty State
                 <div className="flex w-full flex-col items-center justify-center text-center">

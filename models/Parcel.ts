@@ -17,16 +17,25 @@ const ParcelSchema = new mongoose.Schema({
         default: "Parcel"
     },
     status: {
-        type: String,
-        enum: ["PENDING", "DELIVERED", "RETRIEVED"],
-        default: "PENDING"
+    type: String,
+    enum: [
+        "PENDING",
+        "VERIFIED",
+        "DELIVERED",
+        "RETRIEVED"
+    ],
+    default: "PENDING"
     },
     deliveryDate: {
         type: Date,
         default: null
     },
     retrievedDate: {
-        type: Date,
+    type: Date,
+    default: null
+    },
+    videoUrl: {
+        type: String,
         default: null
     }
 }, {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/mongodb';
 import Log from '@/models/Log';
 import { getUserFromRequest } from '@/lib/auth';
+import Locker from '@/models/Locker';
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,10 +11,11 @@ export async function GET(request: NextRequest) {
     const user = getUserFromRequest(request);
     const userId = user.id || user.userId;
 
-    const logs = await Log.find({ userId })
-      .populate('lockerId')
-      .sort({ timestamp: -1 })
-      .limit(50);
+    const logs = await Log.find({
+      userId
+    })
+    .sort({ timestamp: -1 })
+    .limit(50);
 
     return NextResponse.json(logs);
   } catch (error: any) {

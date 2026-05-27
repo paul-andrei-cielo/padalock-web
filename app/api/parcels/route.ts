@@ -9,12 +9,28 @@ export async function GET(req: NextRequest) {
 
         const user = getUserFromRequest(req);
 
+        const parcels = await Parcel.find({
+            userId: user.userId
+        }).lean();
 
-        const parcels = await Parcel.find({ userId: user.userId });
+        const cleanedParcels = parcels.map((parcel: any) => ({
+            ...parcel,
+            status:
+                parcel.status === "VERIFIED"
+                    ? "PENDING"
+                    : parcel.status
+        }));
 
-        return NextResponse.json(parcels);
+        return NextResponse.json(cleanedParcels);
+
     } catch (error) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 400 });
+
+        console.error(error);
+
+        return NextResponse.json(
+            { error: "Unauthorized" },
+            { status: 400 }
+        );
     }
 }
 

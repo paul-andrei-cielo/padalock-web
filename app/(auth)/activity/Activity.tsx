@@ -81,6 +81,7 @@ export default function ActivityPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   
   const [viewMode, setViewMode] = useState<ViewMode>("MAIN_ACTIVITY");
+  const [auditFilter, setAuditFilter] = useState("ALL");
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("ALL");
   const [parcels, setParcels] = useState<Parcel[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
@@ -232,27 +233,56 @@ export default function ActivityPage() {
   }, [activeFilter, activities]);
 
   const formatLogEvent = (log: Log) => {
-    if (!log.success) return `Failed PIN attempt (Details: ${log.details || "None"})`;
-    switch (log.action) {
-      case "PIN_ENTERED": return log.actor === "user" ? "Valid PIN entered" : "Courier access granted";
-      case "LID_OPENED": return log.actor === "user" ? "Lid opened (PIN)" : "Lid opened (Courier)";
-      case "LID_CLOSED": return "Lid closed";
-      case "LOCK_ENGAGED": return "Lock engaged";
-      case "PARCEL_DETECTED": return "Parcel detected";
-      case "PIN_LOCKOUT": return "PIN lockout activated";
-      case "PIN_RESET": return "PIN lockout reset";
-      default: return `${log.action} by ${log.actor}`;
-    }
-  };
+  switch (log.action) {
+
+    case "PIN_VALID":
+      return "Valid PIN Entered";
+
+    case "INVALID_CODE":
+      return "Invalid PIN Attempt";
+
+    case "PIN_LOCKOUT":
+      return "Lockout Activated";
+
+    case "PIN_RESET":
+      return "Lockout Reset";
+
+    case "LOCK_OPEN":
+      return "Locker Opened";
+
+    case "LOCK_CLOSED":
+      return "Locker Closed";
+
+    case "DELIVERY_VALID":
+      return "Parcel Delivered";
+
+    case "RETRIEVE":
+      return "Parcel Retrieved";
+
+    case "LID_OPEN_TOO_LONG":
+      return "Locker Left Open";
+
+    default:
+      return null;
+  }
+};
 
   const formattedAuditLogs: AuditLogItem[] = useMemo(() => {
-    return logs.map((log) => ({
-      id: log._id,
-      date: formatDate(log.timestamp),
-      time: formatTime(log.timestamp),
-      event: formatLogEvent(log),
-    })).slice(0, 20);
-  }, [logs]);
+  return logs
+    .map((log) => {
+      const event = formatLogEvent(log);
+
+      if (!event) return null;
+
+      return {
+        id: log._id,
+        date: formatDate(log.timestamp),
+        time: formatTime(log.timestamp),
+        event,
+      };
+    })
+    .filter(Boolean) as AuditLogItem[];
+}, [logs]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -265,6 +295,7 @@ export default function ActivityPage() {
   }, [selectedClip]);
 
   if (isAuthenticated === null) {
+    
     return (
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
         <div className="text-white text-xl font-extrabold animate-pulse">
@@ -296,6 +327,27 @@ export default function ActivityPage() {
       </main>
     );
   }
+
+    const filteredAuditLogs = formattedAuditLogs.filter((log) => {
+    if (auditFilter === "ALL") return true; 
+
+    if (auditFilter === "PIN")
+      return log.event.toLowerCase().includes("pin");
+
+    if (auditFilter === "LOCK")
+      return log.event.toLowerCase().includes("lock");
+
+    if (auditFilter === "PARCEL")
+      return log.event.toLowerCase().includes("parcel");
+
+    if (auditFilter === "SECURITY")
+      return (
+        log.event.toLowerCase().includes("failed") ||
+        log.event.toLowerCase().includes("lockout")
+      );
+
+    return true;
+  });
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
@@ -460,6 +512,32 @@ export default function ActivityPage() {
               ) : (
                 /* Hardware Audit Table Interface */
                 <div className="flex-1 min-h-0 flex flex-col rounded-[2rem] bg-white/20 p-3">
+                  <div className="mb-3 rounded-[1.5rem] bg-white/35 p-2">
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
+
+                      {[
+                        "ALL",
+                        "PIN",
+                        "LOCK",
+                        "PARCEL",
+                        "SECURITY",
+                      ].map((filter) => (
+                        <button
+                          key={filter}
+                          onClick={() => setAuditFilter(filter)}
+                          className={`rounded-full px-4 py-2 text-sm font-extrabold transition
+                          ${
+                            auditFilter === filter
+                              ? "bg-[#dd96ad] text-white"
+                              : "text-[#df8daa] hover:bg-white/50"
+                          }`}
+                        >
+                          {filter}
+                        </button>
+                      ))}
+
+                    </div>
+                  </div>
                   <div className="mb-3 grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-[1.5rem] bg-white/35 px-5 py-4 text-sm font-extrabold uppercase tracking-wide text-[#de517e] md:px-6 md:text-base">
                     <p>Date</p>
                     <p>Time</p>
@@ -479,7 +557,7 @@ export default function ActivityPage() {
                         </p>
                       </div>
                     ) : (
-                      formattedAuditLogs.map((log) => (
+                      filteredAuditLogs.map((log) => (
                         <div
                           key={log.id}
                           className="grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-[1.5rem] bg-white/40 px-5 py-4 text-[#d96f92] shadow-[0_4px_16px_rgba(255,255,255,0.08)] backdrop-blur-sm transition hover:bg-white/50 md:px-6"
