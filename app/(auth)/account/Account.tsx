@@ -76,6 +76,8 @@ export default function AccountPage() {
   const [updatingPin, setUpdatingPin] = useState(false);
   const [step, setStep] = useState(1);
 
+  const isLockedOut = locker && (locker.pin === null || locker.pin === undefined);
+
   const fetchUserProfile = async () => {
     try {
       setLoading(true);
@@ -323,7 +325,7 @@ export default function AccountPage() {
   
       alert("Account deleted successfully. You will be logged out.");
   
-      setShowDeleteConfirm(false); // close only on success
+      setShowDeleteConfirm(false);
       setDeletePassword("");
   
       localStorage.removeItem("token");
@@ -363,7 +365,7 @@ export default function AccountPage() {
   
       alert("Account deactivated for 30 days");
   
-      setShowDeactivateConfirm(false); // close only on success
+      setShowDeactivateConfirm(false);
       setDeactivatePassword("");
   
       localStorage.removeItem("token");
@@ -379,6 +381,16 @@ export default function AccountPage() {
     localStorage.removeItem("token");
     window.location.href = "/";
   };
+
+  useEffect(() => {
+    if (!lockerLoading && locker) {
+      if (isLockedOut) {
+        setStep(2);
+      } else {
+        setStep(1);
+      }
+    }
+  }, [lockerLoading, locker, isLockedOut]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -408,7 +420,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!showChangePinCard) {
-      setStep(1);
+      setStep(isLockedOut ? 2 : 1);
       setCurrentPin("");
       setVerificationCode("");
       setNewPin("");
@@ -416,7 +428,7 @@ export default function AccountPage() {
       setCodeSent(false);
       setCodeVerified(false);
     }
-  }, [showChangePinCard]);
+  }, [showChangePinCard, isLockedOut]);
 
   if (isAuthenticated === null) {
     return (
@@ -702,61 +714,71 @@ export default function AccountPage() {
                           <LockKeyhole className="h-5 w-5" />
                         </div>
                         <h2 className="text-xl font-extrabold text-white md:text-2xl">
-                          Change PIN
+                          {isLockedOut ? "Recover Locked Locker" : "Change PIN"}
                         </h2>
                       </div>
+
+                      {/* LOCKOUT WARNING */}
+                      {isLockedOut && (
+                        <div className="mb-6 rounded-2xl bg-white/40 p-4 border-2 border-[#de517e] text-[#de517e]">
+                          <p className="text-center font-bold">
+                            ⚠️ This locker is currently locked out due to multiple failed attempts. 
+                            Verify your identity via email to set a new PIN.
+                          </p>
+                        </div>
+                      )}
 
                       <div className="relative flex flex-col gap-4">
                         <div className="absolute bottom-10 left-[1.7rem] top-10 hidden w-[2px] bg-[#de517e]/65 md:block" />
 
-                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 1 ? 'opacity-50' : ''}`}>
-                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 1 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
-                            1
-                          </div>
-                          <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                              <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
-                                Enter current 4-digit PIN
-                              </p>
-                              <div className="relative w-full lg:w-[360px]">
-                                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
-                                <input
-                                  type={showOldPin ? "text" : "password"}
-                                  maxLength={4}
-                                  value={currentPin}
-                                  onChange={(e) => setCurrentPin(e.target.value)}
-                                  placeholder="Enter 4-digit PIN"
-                                  disabled={step !== 1}
-                                  className="h-14 w-full rounded-full bg-[#f7f7f7] pl-12 pr-14 text-base text-[#de517e] outline-none placeholder:text-[#e08ca8] md:text-lg disabled:opacity-50"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowOldPin((prev) => !prev)}
-                                  className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
-                                >
-                                  {showOldPin ? (
-                                    <EyeOff className="h-5 w-5" />
-                                  ) : (
-                                    <Eye className="h-5 w-5" />
-                                  )}
-                                </button>
-                              </div>
+                        {/* STEP 1: Current PIN (Hidden if Locked Out) */}
+                        {!isLockedOut && (
+                          <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 1 ? 'opacity-50' : ''}`}>
+                            <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 1 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
+                              1
                             </div>
-                            {step === 1 && (
-                              <button 
-                                onClick={handleVerifyCurrentPin}
-                                disabled={currentPin.length !== 4 || updatingPin}
-                                className="mt-4 w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
-                              >
-                                Next
-                              </button>
-                            )}
+                            <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
+                              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
+                                  Enter current 4-digit PIN
+                                </p>
+                                <div className="relative w-full lg:w-[360px]">
+                                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
+                                  <input
+                                    type={showOldPin ? "text" : "password"}
+                                    maxLength={4}
+                                    value={currentPin}
+                                    onChange={(e) => setCurrentPin(e.target.value)}
+                                    placeholder="Enter 4-digit PIN"
+                                    disabled={step !== 1}
+                                    className="h-14 w-full rounded-full bg-[#f7f7f7] pl-12 pr-14 text-base text-[#de517e] outline-none placeholder:text-[#e08ca8] md:text-lg disabled:opacity-50"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => setShowOldPin((prev) => !prev)}
+                                    className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
+                                  >
+                                    {showOldPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                  </button>
+                                </div>
+                              </div>
+                              {step === 1 && (
+                                <button 
+                                  onClick={handleVerifyCurrentPin}
+                                  disabled={currentPin.length !== 4 || updatingPin}
+                                  className="mt-4 w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
+                                >
+                                  Next
+                                </button>
+                              )}
+                            </div>
                           </div>
-                        </div>
+                        )}
 
+                        {/* STEP 2: Email Verification */}
                         <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 2 ? 'opacity-50' : ''}`}>
                           <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 2 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
-                            2
+                            {isLockedOut ? 1 : 2}
                           </div>
                           <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
                             <div className="flex flex-col gap-4">
@@ -772,7 +794,7 @@ export default function AccountPage() {
                                     value={verificationCode}
                                     onChange={(e) => setVerificationCode(e.target.value)}
                                     placeholder={codeSent ? "Enter 6-digit code" : "Click send code"}
-                                    disabled={step !== 2 || !codeSent}
+                                    disabled={step !== 2}
                                     className="h-14 w-full rounded-full bg-[#f7f7f7] pl-12 pr-14 text-base text-[#de517e] outline-none placeholder:text-[#e08ca8] md:text-lg disabled:opacity-50"
                                   />
                                   <button
@@ -780,11 +802,7 @@ export default function AccountPage() {
                                     onClick={() => setShowCode((prev) => !prev)}
                                     className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
                                   >
-                                    {showCode ? (
-                                      <EyeOff className="h-5 w-5" />
-                                    ) : (
-                                      <Eye className="h-5 w-5" />
-                                    )}
+                                    {showCode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                   </button>
                                 </div>
                               </div>
@@ -820,9 +838,10 @@ export default function AccountPage() {
                           </div>
                         </div>
 
+                        {/* STEP 3: Enter New PIN */}
                         <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 3 ? 'opacity-50' : ''}`}>
-                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 3 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
-                            3
+                        <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 3 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
+                            {isLockedOut ? 2 : 3}
                           </div>
                           <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
                             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -845,11 +864,7 @@ export default function AccountPage() {
                                   onClick={() => setShowNewPin((prev) => !prev)}
                                   className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
                                 >
-                                  {showNewPin ? (
-                                    <EyeOff className="h-5 w-5" />
-                                  ) : (
-                                    <Eye className="h-5 w-5" />
-                                  )}
+                                  {showNewPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                               </div>
                             </div>
@@ -865,9 +880,10 @@ export default function AccountPage() {
                           </div>
                         </div>
 
+                        {/* STEP 4: Confirm New PIN */}
                         <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 4 ? 'opacity-50' : ''}`}>
-                          <div className="z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ring-2 ring-[#de517e]/50 bg-[#de517e]/80">
-                            4
+                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 4 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
+                            {isLockedOut ? 3 : 4}
                           </div>
                           <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
                             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -890,17 +906,14 @@ export default function AccountPage() {
                                   onClick={() => setShowConfirmPin((prev) => !prev)}
                                   className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
                                 >
-                                  {showConfirmPin ? (
-                                    <EyeOff className="h-5 w-5" />
-                                  ) : (
-                                    <Eye className="h-5 w-5" />
-                                  )}
+                                  {showConfirmPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                 </button>
                               </div>
                             </div>
                           </div>
                         </div>
 
+                        {/* FINAL ACTION BUTTON */}
                         {step === 4 && (
                           <div className="pt-1">
                             <button 
@@ -1007,13 +1020,11 @@ export default function AccountPage() {
       {/* Floating Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <>
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setShowDeleteConfirm(false)}
           />
           
-          {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
               <div className="mb-6 flex items-center justify-between">
@@ -1105,13 +1116,11 @@ export default function AccountPage() {
       {/* Floating Deactivate Confirmation Modal */}
       {showDeactivateConfirm && (
         <>
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setShowDeactivateConfirm(false)}
           />
           
-          {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
               <div className="mb-6 flex items-center justify-between">
@@ -1182,9 +1191,7 @@ export default function AccountPage() {
                   <button
                     onClick={handleDeactivateAccount}
                     disabled={deactivating || !deactivatePassword}
-                    className="flex-1 rounded-[1.5rem] bg-[#b7791f] px-6 py-4 font-extrabold text-white 
-                              transition hover:opacity-90 
-                              disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 rounded-[1.5rem] bg-[#b7791f] px-6 py-4 font-extrabold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {deactivating ? "Processing..." : "Deactivate"}
                   </button>

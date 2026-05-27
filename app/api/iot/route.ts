@@ -20,41 +20,68 @@
             // VERIFY PIN OR TRACKING NUMBER
             // =========================
             if (action === "VERIFY") {
+                const locker = await Locker.findOne({ code: lockerCode });
 
-                // OWNER PIN
-                const locker = await Locker.findOne({
-                    pin: code
-                });
-                
-
-                if (locker) {
-                    return NextResponse.json({
-                        mode: "OWNER"
-                    });
+                if (!locker) {
+                    return NextResponse.json({ error: "Locker hardware not registered" }, { status: 404 });
                 }
 
-                // DELIVERY TRACKING NUMBER
+                if (!locker.pin) {
+                    return NextResponse.json({ mode: "LOCKED_OUT" });
+                }
+
+                if (locker.pin === code) {
+                    await Locker.updateOne({ _id: locker._id }, { failedAttempts: 0 });
+                    
+                    return NextResponse.json({ mode: "OWNER" });
+                }
+
                 const parcel = await Parcel.findOne({
                     trackingNumber: code,
                     status: "PENDING"
                 });
 
                 if (parcel) {
+                    parcel.status = "VERIFIED";
+                    await parcel.save();
+                    await Locker.updateOne({ _id: locker._id }, { failedAttempts: 0 });
 
-                parcel.status = "VERIFIED";
+                    return NextResponse.json({ mode: "DELIVERY" });
+                }
 
-                await parcel.save();
+                const newAttempts = (locker.failedAttempts || 0) + 1;
+                
+                if (newAttempts >= 3) {
+                    await Locker.updateOne(
+                        { _id: locker._id }, 
+                        { 
+                            pin: null, 
+                            failedAttempts: newAttempts,
+                            isLockedOut: true
+                        }
+                    );
+                    
+                    await Log.create({
+                        userId: locker.userId,
+                        lockerId: locker._id,
+                        actor: "system",
+                        action: "PIN_LOCKOUT",
+                        success: false,
+                        details: "3 failed attempts reached. PIN nulled."
+                    });
 
-                console.log("FOUND PARCEL:", parcel.trackingNumber);
+                    return NextResponse.json({ mode: "LOCKED_OUT" });
+                } else {
+                    await Locker.updateOne(
+                        { _id: locker._id }, 
+                        { failedAttempts: newAttempts }
+                    );
 
-                return NextResponse.json({
-                    mode: "DELIVERY"
-                });
-            }
-
-                return NextResponse.json({
-                    mode: "INVALID"
-                });
+                    return NextResponse.json({ 
+                        mode: "INVALID",
+                        attemptsRemaining: 3 - newAttempts 
+                    });
+                }
             }
 
             if (action === "DELIVERED") {

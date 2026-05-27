@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/mongodb';
 import mongoose from 'mongoose';
 import Locker from '@/models/Locker';
 import User from '@/models/User';
+import Log from '@/models/Log'; 
 import { getUserFromRequest } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -88,6 +89,12 @@ export async function PUT(request: NextRequest) {
     await connectDB();
     
     const user = getUserFromRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
     const userId = new mongoose.Types.ObjectId(user.id || user.userId); 
 
     const body = await request.json();
@@ -105,6 +112,12 @@ export async function PUT(request: NextRequest) {
     if (pin !== undefined && pin !== null) {
       updateData.pin = pin;
       updateData.pinChanged = pinChanged !== undefined ? pinChanged : true;
+      
+      // ==========================================
+      // LOCKOUT RECOVERY LOGIC
+      // ==========================================
+      updateData.failedAttempts = 0;  
+      updateData.isLockedOut = false; 
     }
 
     const locker = await Locker.findOneAndUpdate(
@@ -119,6 +132,16 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    await Log.create({
+      userId,
+      lockerId: locker._id,
+      actor: 'user',
+      action: 'PIN_RESET',
+      success: true,
+      details: 'PIN successfully changed/reset after lockout',
+      timestamp: new Date()
+    });
 
     return NextResponse.json(locker);
   } catch (error: any) {
@@ -135,6 +158,12 @@ export async function DELETE(request: NextRequest) {
     await connectDB();
     
     const user = getUserFromRequest(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
     const userId = new mongoose.Types.ObjectId(user.id || user.userId);
 
     const body = await request.json();

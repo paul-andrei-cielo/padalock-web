@@ -18,6 +18,14 @@ const LockerSchema = new mongoose.Schema({
     pinChanged: {
         type: Boolean,
         default: false
+    },
+    failedAttempts: {
+        type: Number,
+        default: 0
+    },
+    isLockedOut: {
+        type: Boolean,
+        default: false
     }
 }, {
     timestamps: true
