@@ -366,7 +366,8 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+            {/* UPDATED SCROLLER SECTION TO REFLECT THE MUTED PINK COLOR */}
+            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#de9aae] [&::-webkit-scrollbar-track]:bg-transparent [scrollbar-color:#de9aae_transparent] [scrollbar-width:thin]">
               <div className="flex flex-col gap-3">
                 {dataLoading ? (
                   <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">
