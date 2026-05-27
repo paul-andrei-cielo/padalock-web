@@ -1,5 +1,5 @@
   import mongoose, { models, mongo } from "mongoose";
-  import Log from "@/models/Log";
+  
 
   const LogSchema = new mongoose.Schema({
     userId: {
@@ -29,6 +29,7 @@
     'DELIVERY_VALID',
     'RETRIEVE',
     'LID_OPEN_TOO_LONG'
+    'DELIVERY_SUCCESS',
   ],
     required: true
   },
