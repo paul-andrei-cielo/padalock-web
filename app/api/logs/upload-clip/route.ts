@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import cloudinary from "@/lib/cloudinary";
 import { connectDB } from "@/lib/mongodb";
 import Parcel from "@/models/Parcel";
+import Log from "@/models/Log";
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,6 +41,18 @@ export async function POST(req: NextRequest) {
       { trackingNumber },
       { videoUrl: result.secure_url },
       { new: true }
+    );
+
+    await Log.findOneAndUpdate(
+      {
+        details: { $regex: trackingNumber }
+      },
+      {
+        cameraRecording: result.secure_url
+      },
+      {
+        sort: { createdAt: -1 }
+      }
     );
 
     return NextResponse.json({
