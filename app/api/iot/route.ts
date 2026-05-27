@@ -95,10 +95,49 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ ok: true });
         }
 
+
+        if (
+            action === "LOCK_OPEN" ||
+            action === "LOCK_CLOSED" ||
+            action === "PIN_VALID" ||
+            action === "INVALID_CODE" ||
+            action === "LID_OPEN_TOO_LONG"
+        )
+        {
+            const locker = await Locker.findOne({ code: lockerCode });
+
+            if (!locker)
+            {
+                return NextResponse.json(
+                    { error: "Locker not found" },
+                    { status: 404 }
+                );
+            }
+
+            await Log.create({
+                userId: locker.userId,
+                lockerId: locker._id,
+                actor: "system",
+                action,
+                success: action !== "INVALID_CODE",
+                details: action
+            });
+
+            return NextResponse.json({ ok: true });
+}
+
         if (action === "RETRIEVE" || action === "PARCEL_REMOVED") {
             const locker = await Locker.findOne({ code: lockerCode });
             if (!locker) return NextResponse.json({ error: "Locker not found" }, { status: 404 });
             await Parcel.updateMany({ userId: locker.userId, status: "DELIVERED" }, { $set: { status: "RETRIEVED", retrievedDate: new Date() } });
+            await Log.create({
+                userId: locker.userId,
+                lockerId: locker._id,
+                actor: "user",
+                action: "RETRIEVE",
+                success: true,
+                details: "Parcel retrieved"
+            });
             return NextResponse.json({ ok: true });
         }
 
