@@ -15,6 +15,13 @@ import {
   X,
 } from "lucide-react";
 
+interface UserProfile {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
 const navItems = [
   { label: "REGISTER", href: "/register" },
   { label: "ACTIVITY", href: "/activity" },
@@ -30,16 +37,8 @@ const scrollbarClass =
   "[&::-webkit-scrollbar-thumb]:rounded-full " +
   "hover:[&::-webkit-scrollbar-thumb]:bg-[#cf6c91]";
 
-interface UserProfile {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-}
-
 export default function AccountPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-  
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -52,21 +51,17 @@ export default function AccountPage() {
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [deactivateError, setDeactivateError] = useState("");
-
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [deactivatePassword, setDeactivatePassword] = useState("");
   const [deactivating, setDeactivating] = useState(false);
-
   const [locker, setLocker] = useState<any>(null);
   const [lockerLoading, setLockerLoading] = useState(true);
-
   const [showChangePinCard, setShowChangePinCard] = useState(false);
   const [showCurrentPin, setShowCurrentPin] = useState(false);
   const [showOldPin, setShowOldPin] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [showNewPin, setShowNewPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
-
   const [currentPin, setCurrentPin] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [newPin, setNewPin] = useState("");
@@ -82,18 +77,14 @@ export default function AccountPage() {
     try {
       setLoading(true);
       const token = localStorage.getItem("token")!;
-      
       const response = await fetch("/api/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.ok) {
         throw new Error("Failed to fetch profile");
       }
-
       const data = await response.json();
       setUser(data.user);
-      
       if (data.user) {
         setEditFirstName(data.user.firstName);
         setEditLastName(data.user.lastName);
@@ -110,15 +101,12 @@ export default function AccountPage() {
     try {
       setLockerLoading(true);
       const token = localStorage.getItem("token")!;
-      
       const response = await fetch("/api/locker", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (!response.ok) {
         throw new Error("Failed to fetch locker");
       }
-
       const data = await response.json();
       setLocker(data.length > 0 ? data[0] : null);
     } catch (err: any) {
@@ -153,12 +141,10 @@ export default function AccountPage() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to send code");
       }
-
       setCodeSent(true);
       alert("Verification code sent to your email!");
     } catch (err: any) {
@@ -180,12 +166,10 @@ export default function AccountPage() {
         },
         body: JSON.stringify({ code: verificationCode }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Invalid code");
       }
-
       setCodeVerified(true);
       setStep(3);
     } catch (err: any) {
@@ -205,7 +189,6 @@ export default function AccountPage() {
       alert("Please enter matching 4-digit PINs");
       return;
     }
-
     try {
       setUpdatingPin(true);
       const token = localStorage.getItem("token");
@@ -216,17 +199,15 @@ export default function AccountPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          id: locker?._id,
+          id: locker?.id,
           pin: newPin,
           pinChanged: true,
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to update PIN");
       }
-
       const data = await response.json();
       setLocker(data);
       setShowChangePinCard(false);
@@ -262,7 +243,6 @@ export default function AccountPage() {
       alert("First name and last name are required");
       return;
     }
-
     try {
       setSaving(true);
       const token = localStorage.getItem("token");
@@ -277,12 +257,10 @@ export default function AccountPage() {
           lastName: editLastName.trim(),
         }),
       });
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to update profile");
       }
-
       const data = await response.json();
       setUser(data.user);
       setEditingProfile(false);
@@ -300,34 +278,25 @@ export default function AccountPage() {
       alert("Password required");
       return;
     }
-  
     try {
       setDeleting(true);
       setDeleteError("");
-  
       const token = localStorage.getItem("token");
-  
       const response = await fetch("/api/users/profile", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          password: deletePassword,
-        }),
+        body: JSON.stringify({ password: deletePassword }),
       });
-  
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to delete account");
       }
-  
       alert("Account deleted successfully. You will be logged out.");
-  
       setShowDeleteConfirm(false);
       setDeletePassword("");
-  
       localStorage.removeItem("token");
       window.location.href = "/";
     } catch (err: any) {
@@ -342,13 +311,10 @@ export default function AccountPage() {
       alert("Password required");
       return;
     }
-  
     try {
       setDeactivating(true);
       setDeactivateError("");
-  
       const token = localStorage.getItem("token");
-  
       const res = await fetch("/api/users/deactivate", {
         method: "POST",
         headers: {
@@ -357,17 +323,13 @@ export default function AccountPage() {
         },
         body: JSON.stringify({ password: deactivatePassword }),
       });
-  
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Failed");
       }
-  
       alert("Account deactivated for 30 days");
-  
       setShowDeactivateConfirm(false);
       setDeactivatePassword("");
-  
       localStorage.removeItem("token");
       window.location.href = "/";
     } catch (err: any) {
@@ -393,20 +355,14 @@ export default function AccountPage() {
   }, [lockerLoading, locker, isLockedOut]);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      if (typeof window === 'undefined') return;
-      
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setIsAuthenticated(false);
-        window.location.href = "/login";
-        return;
-      }
-
-      setIsAuthenticated(true);
-    };
-
-    checkAuth();
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsAuthenticated(false);
+      window.location.href = "/login";
+      return;
+    }
+    setIsAuthenticated(true);
   }, []);
 
   useEffect(() => {
@@ -458,7 +414,9 @@ export default function AccountPage() {
   if (loading) {
     return (
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
-        <div className="text-white text-xl font-extrabold animate-pulse">Loading profile...</div>
+        <div className="text-white text-xl font-extrabold animate-pulse">
+          Loading profile...
+        </div>
       </main>
     );
   }
@@ -466,6 +424,49 @@ export default function AccountPage() {
   return (
     <>
       <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+        
+        {/* Isolated Animation Framework — Ensuring NO changes to structure/layout */}
+        <style jsx global>{`
+          @keyframes pageReveal {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes contentSlideUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes modalFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          @keyframes modalScale {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          main {
+            animation: pageReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+          header, section, .rounded-\[1\.75rem\] {
+            animation: contentSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+          .modal-backdrop-node {
+            animation: modalFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+          .modal-content-node {
+            animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          }
+          header a, header nav a, button {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+          }
+          header a:hover, button:hover {
+            filter: brightness(1.03);
+            transform: translateY(-0.5px);
+          }
+          button:active {
+            transform: scale(0.98);
+          }
+        `}</style>
+
         <div className="mx-auto flex h-full w-full flex-col gap-4">
           <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -506,7 +507,7 @@ export default function AccountPage() {
                   Account Settings
                 </h1>
 
-                <button 
+                <button
                   onClick={handleLogout}
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#de517e] px-6 py-2.5 text-sm font-extrabold text-white transition hover:opacity-90 md:text-base"
                 >
@@ -517,6 +518,7 @@ export default function AccountPage() {
 
               <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
                 <div className="flex flex-col gap-4 pb-1">
+                  
                   {/* Profile Information Card */}
                   <div className="rounded-[1.75rem] bg-white/45 p-4 md:p-5">
                     <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -649,7 +651,7 @@ export default function AccountPage() {
                             showChangePinCard
                               ? "bg-[#de517e] text-white hover:opacity-90"
                               : "border-2 border-[#de517e] text-[#de517e] hover:bg-[#de517e] hover:text-white"
-                          } ${lockerLoading || updatingPin ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          } ${lockerLoading || updatingPin ? "opacity-50 cursor-not-allowed" : ""}`}
                         >
                           {showChangePinCard ? "Cancel" : "Update PIN"}
                         </button>
@@ -679,10 +681,7 @@ export default function AccountPage() {
                           <div className="relative w-full lg:max-w-[320px]">
                             <input
                               type={showCurrentPin ? "text" : "password"}
-                              value={showCurrentPin ? 
-                                (locker?.pin || "••••") : 
-                                formatPinDisplay(locker?.pin)
-                              }
+                              value={showCurrentPin ? (locker?.pin || "••••") : formatPinDisplay(locker?.pin)}
                               readOnly
                               className="w-full rounded-full bg-white/70 py-3 pl-6 pr-14 text-center text-xl tracking-[0.35em] text-[#d46a1a] outline-none"
                               placeholder="No PIN set"
@@ -691,7 +690,7 @@ export default function AccountPage() {
                               onClick={() => setShowCurrentPin((prev) => !prev)}
                               disabled={!locker?.pin}
                               className={`absolute inset-y-0 right-4 flex items-center transition hover:opacity-80 ${
-                                !locker?.pin ? 'opacity-50 cursor-not-allowed text-[#d46a1a]/50' : 'text-[#d46a1a]'
+                                !locker?.pin ? "opacity-50 cursor-not-allowed text-[#d46a1a]/50" : "text-[#d46a1a]"
                               }`}
                             >
                               {showCurrentPin ? (
@@ -722,8 +721,7 @@ export default function AccountPage() {
                       {isLockedOut && (
                         <div className="mb-6 rounded-2xl bg-white/40 p-4 border-2 border-[#de517e] text-[#de517e]">
                           <p className="text-center font-bold">
-                            ⚠️ This locker is currently locked out due to multiple failed attempts. 
-                            Verify your identity via email to set a new PIN.
+                            ⚠️ This locker is currently locked out due to multiple failed attempts. Verify your identity via email to set a new PIN.
                           </p>
                         </div>
                       )}
@@ -733,8 +731,8 @@ export default function AccountPage() {
 
                         {/* STEP 1: Current PIN (Hidden if Locked Out) */}
                         {!isLockedOut && (
-                          <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 1 ? 'opacity-50' : ''}`}>
-                            <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 1 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
+                          <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 1 ? "opacity-50" : ""}`}>
+                            <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 1 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
                               1
                             </div>
                             <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
@@ -763,7 +761,7 @@ export default function AccountPage() {
                                 </div>
                               </div>
                               {step === 1 && (
-                                <button 
+                                <button
                                   onClick={handleVerifyCurrentPin}
                                   disabled={currentPin.length !== 4 || updatingPin}
                                   className="mt-4 w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
@@ -776,15 +774,15 @@ export default function AccountPage() {
                         )}
 
                         {/* STEP 2: Email Verification */}
-                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 2 ? 'opacity-50' : ''}`}>
-                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 2 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
+                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 2 ? "opacity-50" : ""}`}>
+                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 2 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
                             {isLockedOut ? 1 : 2}
                           </div>
                           <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
                             <div className="flex flex-col gap-4">
                               <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                                 <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
-                                  {codeSent ? 'Enter verification code' : 'Send verification code to email'}
+                                  {codeSent ? "Enter verification code" : "Send verification code to email"}
                                 </p>
                                 <div className="relative w-full lg:w-[360px]">
                                   <Send className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
@@ -808,7 +806,7 @@ export default function AccountPage() {
                               </div>
                               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                 {!codeSent ? (
-                                  <button 
+                                  <button
                                     onClick={handleSendVerificationCode}
                                     disabled={updatingPin}
                                     className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
@@ -816,7 +814,7 @@ export default function AccountPage() {
                                     Send Code
                                   </button>
                                 ) : (
-                                  <button 
+                                  <button
                                     onClick={handleVerifyCode}
                                     disabled={verificationCode.length !== 6 || updatingPin}
                                     className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
@@ -825,7 +823,7 @@ export default function AccountPage() {
                                   </button>
                                 )}
                                 {codeSent && (
-                                  <button 
+                                  <button
                                     onClick={handleResendCode}
                                     disabled={updatingPin}
                                     className="rounded-full border-2 border-[#de517e] bg-transparent px-6 py-3 text-base font-extrabold text-[#de517e] transition hover:bg-[#de517e] hover:text-white md:text-lg"
@@ -839,8 +837,8 @@ export default function AccountPage() {
                         </div>
 
                         {/* STEP 3: Enter New PIN */}
-                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 3 ? 'opacity-50' : ''}`}>
-                        <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 3 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
+                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 3 ? "opacity-50" : ""}`}>
+                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 3 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
                             {isLockedOut ? 2 : 3}
                           </div>
                           <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
@@ -869,7 +867,7 @@ export default function AccountPage() {
                               </div>
                             </div>
                             {step === 3 && (
-                              <button 
+                              <button
                                 onClick={() => setStep(4)}
                                 disabled={newPin.length !== 4 || updatingPin}
                                 className="mt-4 w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
@@ -881,8 +879,8 @@ export default function AccountPage() {
                         </div>
 
                         {/* STEP 4: Confirm New PIN */}
-                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 4 ? 'opacity-50' : ''}`}>
-                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 4 ? 'ring-2 ring-[#de517e]/50 bg-[#de517e]/80' : ''}`}>
+                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 4 ? "opacity-50" : ""}`}>
+                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 4 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
                             {isLockedOut ? 3 : 4}
                           </div>
                           <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
@@ -916,7 +914,7 @@ export default function AccountPage() {
                         {/* FINAL ACTION BUTTON */}
                         {step === 4 && (
                           <div className="pt-1">
-                            <button 
+                            <button
                               onClick={handleUpdatePin}
                               disabled={newPin.length !== 4 || confirmPin.length !== 4 || newPin !== confirmPin || updatingPin}
                               className="w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
@@ -927,7 +925,7 @@ export default function AccountPage() {
                                   Updating PIN...
                                 </>
                               ) : (
-                                'Update PIN'
+                                "Update PIN"
                               )}
                             </button>
                             {newPin !== confirmPin && newPin.length === 4 && confirmPin.length === 4 && (
@@ -960,10 +958,9 @@ export default function AccountPage() {
                             Your account will be disabled for 30 days. You can log back in to restore it.
                           </p>
                         </div>
-
                         <button
                           onClick={() => setShowDeactivateConfirm(true)}
-                          className="inline-flex items-center justify-center rounded-full bg-[#b7791f] px-6 py-3 text-base font-extrabold text-white"
+                          className="inline-flex items-center justify-center rounded-full bg-[#b7791f] px-6 py-3 text-base font-extrabold text-white shadow-sm"
                         >
                           Deactivate
                         </button>
@@ -992,8 +989,7 @@ export default function AccountPage() {
                             This will permanently delete your account and all records. This action cannot be undone.
                           </p>
                         </div>
-
-                        <button 
+                        <button
                           onClick={() => setShowDeleteConfirm(true)}
                           disabled={deleting}
                           className="inline-flex items-center justify-center rounded-full bg-[#ef1f1f] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
@@ -1010,6 +1006,7 @@ export default function AccountPage() {
                       </div>
                     </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -1020,13 +1017,12 @@ export default function AccountPage() {
       {/* Floating Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <>
-          <div 
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
+          <div
+            className="modal-backdrop-node fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setShowDeleteConfirm(false)}
           />
-          
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
+            <div className="modal-content-node w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ef1f1f]/20 p-2">
@@ -1099,7 +1095,7 @@ export default function AccountPage() {
                   >
                     {deleting ? (
                       <>
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent md:h-6 md:w-6" />
+                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-2 md:h-6 md:w-6" />
                         <span>Deleting...</span>
                       </>
                     ) : (
@@ -1116,13 +1112,12 @@ export default function AccountPage() {
       {/* Floating Deactivate Confirmation Modal */}
       {showDeactivateConfirm && (
         <>
-          <div 
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
+          <div
+            className="modal-backdrop-node fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
             onClick={() => setShowDeactivateConfirm(false)}
           />
-          
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
+            <div className="modal-content-node w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b7791f]/20 p-2">
@@ -1137,7 +1132,6 @@ export default function AccountPage() {
                     </p>
                   </div>
                 </div>
-
                 <button
                   onClick={() => setShowDeactivateConfirm(false)}
                   disabled={deactivating}
@@ -1161,7 +1155,6 @@ export default function AccountPage() {
                   <label className="mb-2 block text-sm font-semibold text-gray-700">
                     Enter your password to confirm
                   </label>
-
                   <input
                     type="password"
                     value={deactivatePassword}
@@ -1169,12 +1162,12 @@ export default function AccountPage() {
                     placeholder="Enter your password"
                     className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 text-base outline-none focus:border-2 focus:border-[#b7791f]"
                   />
+                  {deactivateError && (
+                    <p className="mt-2 text-sm text-red-500 font-semibold">
+                      {deactivateError}
+                    </p>
+                  )}
                 </div>
-                {deactivateError && (
-                  <p className="mt-2 text-sm text-red-500 font-semibold">
-                    {deactivateError}
-                  </p>
-                )}
 
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <button
@@ -1187,7 +1180,6 @@ export default function AccountPage() {
                   >
                     Cancel
                   </button>
-
                   <button
                     onClick={handleDeactivateAccount}
                     disabled={deactivating || !deactivatePassword}

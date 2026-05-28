@@ -28,7 +28,7 @@
     'LOCK_CLOSED',
     'DELIVERY_VALID',
     'RETRIEVE',
-    'LID_OPEN_TOO_LONG'
+    'LID_OPEN_TOO_LONG',
     'DELIVERY_SUCCESS',
   ],
     required: true

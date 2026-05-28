@@ -193,7 +193,7 @@ export default function HomePage() {
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
-            Looks like you're not logged in
+            Looks like you&apos;re not logged in
           </div>
           <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
             Redirecting to login...
@@ -213,6 +213,63 @@ export default function HomePage() {
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+      
+      {/* Structural Animation Framework — No alterations made to UI layout hierarchy */}
+      <style jsx global>{`
+        @keyframes containerFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes blockScaleUp {
+          from { opacity: 0; transform: scale(0.975) translateY(8px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes rightFeedEntrance {
+          from { opacity: 0; transform: translateX(12px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes filterDropdownReveal {
+          from { opacity: 0; transform: translateY(-4px) scale(0.95); }
+          to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        main {
+          animation: containerFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        section > div {
+          animation: blockScaleUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        section > aside {
+          animation: blockScaleUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.05s forwards;
+        }
+        .overview-card-node {
+          animation: blockScaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .feed-item-node {
+          animation: rightFeedEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .dropdown-mount-node {
+          animation: filterDropdownReveal 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          transform-origin: top center;
+        }
+        header a, nav a, button, .overview-card-node, .feed-item-node {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        header a:hover, nav a:hover {
+          transform: translateY(-0.5px);
+          filter: brightness(1.04);
+        }
+        button:active {
+          transform: scale(0.97);
+        }
+        .overview-card-node:hover {
+          box-shadow: 0 10px 25px -5px rgba(223, 68, 115, 0.08);
+        }
+        .feed-item-node:hover {
+          transform: translateX(3px) !important;
+          filter: brightness(1.015);
+        }
+      `}</style>
+
       <div className="mx-auto flex h-full w-full flex-col gap-4">
         <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -260,7 +317,7 @@ export default function HomePage() {
               </div>
             ) : (
               <div className="grid min-h-0 flex-1 gap-4 sm:grid-cols-1 md:grid-cols-3">
-                <div className="flex min-h-[170px] flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02] md:p-5">
+                <div style={{ animationDelay: '0ms' }} className="overview-card-node opacity-0 flex min-h-[170px] flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02] md:p-5">
                   <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
                     Pending
                   </h3>
@@ -271,7 +328,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="flex min-h-[170px] flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02] md:p-5">
+                <div style={{ animationDelay: '40ms' }} className="overview-card-node opacity-0 flex min-h-[170px] flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02] md:p-5">
                   <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
                     Delivered
                   </h3>
@@ -282,7 +339,7 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="flex min-h-[170px] flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02] md:p-5">
+                <div style={{ animationDelay: '80ms' }} className="overview-card-node opacity-0 flex min-h-[170px] flex-col rounded-[1.5rem] bg-white/50 p-4 transition hover:scale-[1.02] md:p-5">
                   <h3 className="text-center text-base font-extrabold text-[#df4473] md:text-lg lg:text-xl">
                     Retrieved
                   </h3>
@@ -300,7 +357,7 @@ export default function HomePage() {
                       </button>
 
                       {showDropdown && (
-                        <div className="absolute mt-1 w-full rounded-lg bg-white shadow-md text-xs text-[#df4473] overflow-hidden">
+                        <div className="dropdown-mount-node absolute mt-1 w-full rounded-lg bg-white shadow-md text-xs text-[#df4473] overflow-hidden z-10">
                           {["today", "week", "month", "year"].map((item) => (
                             <button
                               key={item}
@@ -347,7 +404,8 @@ export default function HomePage() {
                 return (
                   <div
                     key={index}
-                    className="flex w-full items-start gap-3 rounded-[1.25rem] bg-white/55 px-4 py-3"
+                    style={{ animationDelay: `${index * 30}ms` }}
+                    className="feed-item-node opacity-0 flex w-full items-start gap-3 rounded-[1.25rem] bg-white/55 px-4 py-3"
                   >
                     <div
                       className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${colors.bg}`}
@@ -362,7 +420,7 @@ export default function HomePage() {
                         {item.type}
                       </p>
 
-                      <p className="text-xs md:text-sm text-[#df4473]/80">
+                      <p className="text-xs md:text-sm text-[#df4473]/80 truncate">
                         {item.parcelName && item.parcelName !== "Parcel"
                           ? item.parcelName
                           : `Tracking #${item.trackingNumber}`}
@@ -376,8 +434,7 @@ export default function HomePage() {
                 );
               })
               ) : (
-                //Added Empty State
-                <div className="flex w-full flex-col items-center justify-center text-center">
+                <div className="flex w-full flex-col items-center justify-center text-center py-8">
                   <p className="text-xl font-bold text-[#df4473]/80 md:text-3xl">
                     No recent updates
                   </p>

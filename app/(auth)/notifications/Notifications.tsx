@@ -174,7 +174,7 @@ export default function NotificationsPage() {
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
         <div className="text-center">
           <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
-            Looks like you're not logged in
+            Looks like you&apos;re not logged in
           </div>
           <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
             Redirecting to login...
@@ -186,6 +186,40 @@ export default function NotificationsPage() {
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
+      
+      {/* Global CSS Injection Layer — No layout alterations */}
+      <style jsx global>{`
+        @keyframes pageFadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes itemEntrance {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        main {
+          animation: pageFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-notification-card {
+          animation: itemEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        header a, header nav a, .animate-notification-card {
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+        header a:hover {
+          transform: translateY(-1px);
+          filter: brightness(1.03);
+        }
+        header a:active {
+          transform: translateY(0px) scale(0.98);
+        }
+        .animate-notification-card:hover {
+          transform: translateX(2px);
+          filter: brightness(1.02);
+          box-shadow: 0 4px 12px rgba(223, 68, 115, 0.05);
+        }
+      `}</style>
+
       <div className="mx-auto flex h-full w-full flex-col gap-4">
         <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -247,13 +281,14 @@ export default function NotificationsPage() {
                 </div>
               ) : (
                 <div className="flex flex-col gap-2.5">
-                  {notifications.map((item) => {
+                  {notifications.map((item, index) => {
                     const isAlert = item.type === "FAILED_PIN";
                     
                     return (
                       <div
                         key={item.id}
-                        className={`rounded-xl border border-white/20 p-3.5 backdrop-blur-sm transition md:p-4 ${
+                        style={{ animationDelay: `${index * 25}ms` }}
+                        className={`animate-notification-card opacity-0 rounded-xl border border-white/20 p-3.5 backdrop-blur-sm transition md:p-4 ${
                           isAlert
                             ? `bg-red-500/20 border-l-4 border-l-red-500 ${item.unread ? "bg-red-500/35" : ""}`
                             : item.unread

@@ -273,7 +273,7 @@ export default function RegisterPage() {
     return (
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
+          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight animate-bounce">
             Looks like you're not logged in
           </div>
           <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
@@ -294,10 +294,28 @@ export default function RegisterPage() {
 
   return (
     <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-      <div className="mx-auto flex h-full w-full flex-col gap-4">
-        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
+      {/* Global CSS Injector for Keyframe Animations */}
+      <style jsx global>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-slide-up {
+          animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
+
+      <div className="mx-auto flex h-full w-full flex-col gap-4 animate-fade-in">
+        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4 transition-all duration-300 hover:bg-[#FFFFFF]/30">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <Link href="/home" className="flex items-center">
+            <Link href="/home" className="flex items-center transition-transform duration-200 hover:scale-105 active:scale-95">
               <Image
                 src="/padalock-logo.png"
                 alt="PadaLock logo"
@@ -313,8 +331,8 @@ export default function RegisterPage() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`transition hover:opacity-80 ${
-                    item.href === "/register" ? "font-extrabold" : ""
+                  className={`transition-all duration-200 hover:opacity-100 hover:text-white/80 hover:-translate-y-0.5 transform ${
+                    item.href === "/register" ? "font-extrabold" : "opacity-80"
                   }`}
                 >
                   {item.label}
@@ -325,7 +343,7 @@ export default function RegisterPage() {
         </header>
 
         <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <div className="flex min-h-0 flex-col rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
+          <div className="flex min-h-0 flex-col rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6 animate-slide-up [animation-delay:100ms]">
             <div className="shrink-0">
               <h2 className="text-xl font-extrabold text-white md:text-2xl">
                 Registered Tracking Numbers
@@ -337,11 +355,11 @@ export default function RegisterPage() {
               </p>
 
               {error && (
-                <div className="mt-3 rounded-xl bg-red-400/50 p-3 text-sm text-white">
+                <div className="mt-3 rounded-xl bg-red-400/50 p-3 text-sm text-white animate-shake">
                   {error}
                   <button
                     onClick={fetchParcels}
-                    className="ml-2 inline-flex items-center gap-1 text-xs underline hover:no-underline"
+                    className="ml-2 inline-flex items-center gap-1 text-xs underline hover:no-underline transition-opacity hover:opacity-80"
                   >
                     Retry
                   </button>
@@ -354,9 +372,9 @@ export default function RegisterPage() {
                     key={tab}
                     type="button"
                     onClick={() => setActiveFilter(tab)}
-                    className={`min-w-[110px] flex-1 rounded-full px-3 py-2 text-xs font-bold transition sm:text-sm md:text-base ${
+                    className={`min-w-[110px] flex-1 rounded-full px-3 py-2 text-xs font-bold transition-all duration-300 cubic-bezier(0.16, 1, 0.3, 1) transform active:scale-95 ${
                       activeFilter === tab
-                        ? "bg-[#de9aae] text-white"
+                        ? "bg-[#de9aae] text-white shadow-md scale-102"
                         : "text-[#de9aae] hover:bg-white/30"
                     }`}
                   >
@@ -366,16 +384,15 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            {/* UPDATED SCROLLER SECTION TO REFLECT THE MUTED PINK COLOR */}
             <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#de9aae] [&::-webkit-scrollbar-track]:bg-transparent [scrollbar-color:#de9aae_transparent] [scrollbar-width:thin]">
               <div className="flex flex-col gap-3">
                 {dataLoading ? (
-                  <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">
+                  <div className="flex min-h-full flex-col items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center animate-fade-in">
                     <div className="animate-spin h-8 w-8 border-2 border-[#de9aae]/50 border-t-[#de9aae] rounded-full mx-auto mb-4"></div>
                     <p className="text-white">Loading parcels...</p>
                   </div>
                 ) : filteredParcels.length === 0 ? (
-                  <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center">
+                  <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center animate-fade-in">
                     <div>
                       <p className="text-lg font-bold text-[#de9aae] md:text-xl">
                         No parcels{" "}
@@ -390,7 +407,7 @@ export default function RegisterPage() {
                     </div>
                   </div>
                 ) : (
-                  filteredParcels.map((parcel) => {
+                  filteredParcels.map((parcel, idx) => {
                     const statusStyle =
                       statusColors[
                         parcel.status as keyof typeof statusColors
@@ -404,18 +421,19 @@ export default function RegisterPage() {
                     return (
                       <div
                         key={parcel._id}
-                        className="flex flex-col gap-4 rounded-[1.5rem] bg-white/45 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between"
+                        style={{ animationDelay: `${idx * 40}ms` }}
+                        className="flex flex-col gap-4 rounded-[1.5rem] bg-white/45 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between transition-all duration-300 ease-out hover:bg-white/60 hover:shadow-sm hover:-translate-y-0.5 animate-slide-up"
                       >
                         <div className="min-w-0 flex-1">
                           {isEditing ? (
-                            <>
+                            <div className="animate-fade-in">
                               <input
                                 type="text"
                                 value={editTrackingNumber}
                                 onChange={(e) =>
                                   setEditTrackingNumber(e.target.value)
                                 }
-                                className="w-full bg-transparent text-lg font-extrabold text-[#de9aae] outline-none sm:text-xl md:text-2xl"
+                                className="w-full bg-white/50 px-2 py-1 rounded-md text-lg font-extrabold text-[#de9aae] outline-none border border-[#de9aae]/20 focus:border-[#de9aae] transition-colors sm:text-xl md:text-2xl"
                                 autoFocus
                                 onKeyDown={(e) => {
                                   if (e.key === "Enter")
@@ -431,7 +449,7 @@ export default function RegisterPage() {
                                     onChange={(e) =>
                                       setEditParcelName(e.target.value)
                                     }
-                                    className="block w-full bg-transparent font-medium outline-none"
+                                    className="block w-full bg-white/50 px-2 py-0.5 rounded-md mt-1 font-medium outline-none border border-[#de9aae]/10 focus:border-[#de9aae] transition-colors"
                                     onKeyDown={(e) => {
                                       if (e.key === "Enter")
                                         handleUpdate(parcel._id);
@@ -439,11 +457,11 @@ export default function RegisterPage() {
                                     }}
                                   />
                                 )}
-                                <span>{formatDate(parcel.createdAt)}</span>
+                                <span className="inline-block mt-2">{formatDate(parcel.createdAt)}</span>
                               </div>
-                            </>
+                            </div>
                           ) : (
-                            <>
+                            <div className="animate-fade-in">
                               <h3 className="break-all text-lg font-extrabold text-[#de9aae] sm:text-xl md:text-2xl">
                                 {parcel.trackingNumber}
                               </h3>
@@ -460,58 +478,60 @@ export default function RegisterPage() {
                                   }}
                                 />
                               </div>
-                            </>
+                            </div>
                           )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:ml-4 lg:flex-nowrap">
                           <span
-                            className={`rounded-full px-4 py-2 text-xs font-extrabold sm:text-sm md:px-5 md:text-base ${statusStyle.bg} ${statusStyle.text}`}
+                            className={`rounded-full px-4 py-2 text-xs font-extrabold transition-all duration-300 sm:text-sm md:px-5 md:text-base hover:brightness-95 ${statusStyle.bg} ${statusStyle.text}`}
                           >
                             {getStatusDisplay(parcel.status)}
                           </span>
 
-                          {isEditing ? (
-                            <>
-                              <button
-                                type="button"
-                                className="text-lg text-green-600 transition hover:scale-110 hover:opacity-80 md:text-xl"
-                                aria-label="Save changes"
-                                onClick={() => handleUpdate(parcel._id)}
-                              >
-                                ✓
-                              </button>
-                              <button
-                                type="button"
-                                className="text-lg text-red-500 transition hover:scale-110 hover:opacity-80 md:text-xl"
-                                aria-label="Cancel edit"
-                                onClick={cancelEdit}
-                              >
-                                ✕
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <button
-                                type="button"
-                                className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
-                                aria-label={`Edit ${parcel.trackingNumber}`}
-                                onClick={() => startEdit(parcel)}
-                              >
-                                ✎
-                              </button>
-                              <button
-                                type="button"
-                                className="text-lg text-[#de9aae] transition hover:scale-110 hover:opacity-80 md:text-xl"
-                                aria-label={`Delete ${parcel.trackingNumber}`}
-                                onClick={() =>
-                                  handleDelete(parcel._id, parcel.trackingNumber)
-                                }
-                              >
-                                🗑
-                              </button>
-                            </>
-                          )}
+                          <div className="flex items-center gap-3">
+                            {isEditing ? (
+                              <>
+                                <button
+                                  type="button"
+                                  className="text-lg text-green-600 transition-all transform hover:scale-125 hover:opacity-100 active:scale-95 md:text-xl"
+                                  aria-label="Save changes"
+                                  onClick={() => handleUpdate(parcel._id)}
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  type="button"
+                                  className="text-lg text-red-500 transition-all transform hover:scale-125 hover:opacity-100 active:scale-95 md:text-xl"
+                                  aria-label="Cancel edit"
+                                  onClick={cancelEdit}
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  className="text-lg text-[#de9aae] opacity-80 transition-all transform hover:scale-125 hover:opacity-100 hover:text-[#df4473] active:scale-95 md:text-xl"
+                                  aria-label={`Edit ${parcel.trackingNumber}`}
+                                  onClick={() => startEdit(parcel)}
+                                >
+                                  ✎
+                                </button>
+                                <button
+                                  type="button"
+                                  className="text-lg text-[#de9aae] opacity-80 transition-all transform hover:scale-125 hover:opacity-100 hover:text-red-500 active:scale-95 md:text-xl"
+                                  aria-label={`Delete ${parcel.trackingNumber}`}
+                                  onClick={() =>
+                                    handleDelete(parcel._id, parcel.trackingNumber)
+                                  }
+                                >
+                                  🗑
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -521,7 +541,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="flex min-h-0 flex-col rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
+          <div className="flex min-h-0 flex-col rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6 animate-slide-up [animation-delay:200ms]">
             <div className="shrink-0">
               <h2 className="text-xl font-extrabold text-white md:text-2xl">
                 Register Tracking Number
@@ -529,7 +549,7 @@ export default function RegisterPage() {
             </div>
 
             <form className="mt-6 space-y-4" onSubmit={handleRegister}>
-              <div>
+              <div className="transition-all duration-300 focus-within:translate-x-1">
                 <label className="mb-2 block text-base font-medium text-white md:text-lg">
                   Tracking number *
                 </label>
@@ -537,7 +557,7 @@ export default function RegisterPage() {
                   id="trackingNumber"
                   type="text"
                   placeholder="Enter your parcel's tracking number"
-                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-white/50 md:h-14 md:text-base"
+                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0]/70 focus:ring-2 focus:ring-white/50 focus:bg-white/60 transition-all duration-300 md:h-14 md:text-base"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
                   disabled={loading}
@@ -546,7 +566,7 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div>
+              <div className="transition-all duration-300 focus-within:translate-x-1">
                 <label className="mb-2 block text-base font-medium text-white md:text-lg">
                   Parcel name (optional)
                 </label>
@@ -554,7 +574,7 @@ export default function RegisterPage() {
                   id="parcelName"
                   type="text"
                   placeholder="e.g., Birthday Gift, Documents"
-                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0] focus:ring-2 focus:ring-white/50 md:h-14 md:text-base"
+                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0]/70 focus:ring-2 focus:ring-white/50 focus:bg-white/60 transition-all duration-300 md:h-14 md:text-base"
                   value={parcelName}
                   onChange={(e) => setParcelName(e.target.value)}
                   disabled={loading}
@@ -565,12 +585,18 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading || !trackingNumber.trim()}
-                className="h-12 w-full rounded-full bg-[#df4473] px-6 text-base font-extrabold text-white transition hover:scale-[1.01] disabled:opacity-50 disabled:cursor-not-allowed md:h-14 md:text-xl"
+                className="h-12 w-full rounded-full bg-[#df4473] px-6 text-base font-extrabold text-white shadow-md transition-all duration-300 transform cubic-bezier(0.16, 1, 0.3, 1) hover:scale-[1.02] hover:brightness-105 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none md:h-14 md:text-xl"
               >
-                {loading ? "Registering..." : "Register"}
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="animate-spin h-5 w-5 border-2 border-white/50 border-t-white rounded-full"></span>
+                    Registering...
+                  </span>
+                ) : (
+                  "Register"
+                )}
               </button>
             </form>
-
           </div>
         </section>
       </div>
