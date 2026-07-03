@@ -16,6 +16,32 @@ export default function Home() {
     setLoading(true);
     setError("");
 
+    // ── ADD THIS VALIDATION BLOCK ──
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!email.trim()) {
+      setError("Email is required.");
+      setLoading(false);
+      return;
+    }
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address.");
+    setLoading(false);
+    return;
+  }
+  if (!password) {
+    setError("Password is required.");
+    setLoading(false);
+    return;
+  }
+  if (password.length < 6) {
+    setError("Password must be at least 6 characters.");
+    setLoading(false);
+    return;
+  }
+  // ── END VALIDATION BLOCK ──
+
+
     try {
       const res = await fetch('/api/users/login', {
         method: 'POST',

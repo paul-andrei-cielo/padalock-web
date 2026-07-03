@@ -27,35 +27,48 @@ export default function SignupPage() {
     formData.password !== formData.confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
+  e.preventDefault();
+  setError("");
 
-    if (!formData.firstName.trim()) {
-      setError("First name is required");
-      return;
-    }
-    if (!formData.lastName.trim()) {
-      setError("Last name is required");
-      return;
-    }
-    if (!formData.email.trim()) {
-      setError("Email is required");
-      return;
-    }
-    if (formData.password.length < 6) {
-      setError("Password must be at least 6 characters long");
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
-      return;
-    }
+  const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      setError("Please enter a valid email address");
-      return;
-    }
+  // Stricter email regex — blocks special characters like $, #, !
+  // and requires a proper domain format (e.g. @gmail.com, @yahoo.com)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+  if (!formData.firstName.trim()) {
+    setError("First name is required.");
+    return;
+  }
+  if (!nameRegex.test(formData.firstName.trim())) {
+    setError("First name must contain letters only (no numbers or special characters).");
+    return;
+  }
+  if (!formData.lastName.trim()) {
+    setError("Last name is required.");
+    return;
+  }
+  if (!nameRegex.test(formData.lastName.trim())) {
+    setError("Last name must contain letters only (no numbers or special characters).");
+    return;
+  }
+  if (!formData.email.trim()) {
+    setError("Email is required.");
+    return;
+  }
+  if (!emailRegex.test(formData.email.trim())) {
+    setError("Please enter a valid email address (e.g. user@gmail.com or user@yahoo.com).");
+    return;
+  }
+  if (formData.password.length < 6) {
+    setError("Password must be at least 6 characters long.");
+    return;
+  }
+  if (formData.password !== formData.confirmPassword) {
+    setError("Passwords do not match.");
+    return;
+  }
+
 
     setIsLoading(true);
 
