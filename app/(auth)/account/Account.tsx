@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   User,
   Pencil,
@@ -30,48 +30,53 @@ const navItems = [
 ];
 
 const scrollbarClass =
-  "[&::-webkit-scrollbar]:w-2.5 " +
-  "[&::-webkit-scrollbar-track]:bg-[#f2d9e2] " +
-  "[&::-webkit-scrollbar-track]:rounded-full " +
-  "[&::-webkit-scrollbar-thumb]:bg-[#d985a1] " +
-  "[&::-webkit-scrollbar-thumb]:rounded-full " +
-  "hover:[&::-webkit-scrollbar-thumb]:bg-[#cf6c91]";
+  "[&::-webkit-scrollbar]:w-1.5 " +
+  "[&::-webkit-scrollbar-track]:bg-transparent " +
+  "[&::-webkit-scrollbar-thumb]:bg-white/20 " +
+  "[&::-webkit-scrollbar-thumb]:rounded-full";
 
 export default function AccountPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const [editingProfile, setEditingProfile] = useState(false);
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
   const [saving, setSaving] = useState(false);
+
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
+
   const [deactivateError, setDeactivateError] = useState("");
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(false);
   const [deactivatePassword, setDeactivatePassword] = useState("");
   const [deactivating, setDeactivating] = useState(false);
+
   const [locker, setLocker] = useState<any>(null);
   const [lockerLoading, setLockerLoading] = useState(true);
   const [showChangePinCard, setShowChangePinCard] = useState(false);
+
   const [showCurrentPin, setShowCurrentPin] = useState(false);
   const [showOldPin, setShowOldPin] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [showNewPin, setShowNewPin] = useState(false);
   const [showConfirmPin, setShowConfirmPin] = useState(false);
+
   const [currentPin, setCurrentPin] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
   const [newPin, setNewPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [codeSent, setCodeSent] = useState(false);
-  const [codeVerified, setCodeVerified] = useState(false);
   const [updatingPin, setUpdatingPin] = useState(false);
   const [step, setStep] = useState(1);
 
-  const isLockedOut = locker && (locker.pin === null || locker.pin === undefined);
+  const isLockedOut =
+    locker && (locker.pin === null || locker.pin === undefined);
 
   const fetchUserProfile = async () => {
     try {
@@ -80,11 +85,12 @@ export default function AccountPage() {
       const response = await fetch("/api/users/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) {
-        throw new Error("Failed to fetch profile");
-      }
+
+      if (!response.ok) throw new Error("Failed to fetch profile");
+
       const data = await response.json();
       setUser(data.user);
+
       if (data.user) {
         setEditFirstName(data.user.firstName);
         setEditLastName(data.user.lastName);
@@ -104,9 +110,9 @@ export default function AccountPage() {
       const response = await fetch("/api/locker", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!response.ok) {
-        throw new Error("Failed to fetch locker");
-      }
+
+      if (!response.ok) throw new Error("Failed to fetch locker");
+
       const data = await response.json();
       setLocker(data.length > 0 ? data[0] : null);
     } catch (err: any) {
@@ -122,7 +128,7 @@ export default function AccountPage() {
     return pin.toString().padStart(4, "0");
   };
 
-  const handleVerifyCurrentPin = async () => {
+  const handleVerifyCurrentPin = () => {
     if (currentPin !== locker?.pin) {
       alert("Current PIN is incorrect");
       return;
@@ -134,6 +140,7 @@ export default function AccountPage() {
     try {
       setUpdatingPin(true);
       const token = localStorage.getItem("token");
+
       const response = await fetch("/api/users/send-code", {
         method: "POST",
         headers: {
@@ -141,10 +148,12 @@ export default function AccountPage() {
           Authorization: `Bearer ${token}`,
         },
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to send code");
       }
+
       setCodeSent(true);
       alert("Verification code sent to your email!");
     } catch (err: any) {
@@ -158,6 +167,7 @@ export default function AccountPage() {
     try {
       setUpdatingPin(true);
       const token = localStorage.getItem("token");
+
       const response = await fetch("/api/users/verify-code", {
         method: "POST",
         headers: {
@@ -166,11 +176,12 @@ export default function AccountPage() {
         },
         body: JSON.stringify({ code: verificationCode }),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Invalid code");
       }
-      setCodeVerified(true);
+
       setStep(3);
     } catch (err: any) {
       alert(err.message || "Invalid verification code");
@@ -185,13 +196,19 @@ export default function AccountPage() {
   };
 
   const handleUpdatePin = async () => {
-    if (newPin.length !== 4 || confirmPin.length !== 4 || newPin !== confirmPin) {
+    if (
+      newPin.length !== 4 ||
+      confirmPin.length !== 4 ||
+      newPin !== confirmPin
+    ) {
       alert("Please enter matching 4-digit PINs");
       return;
     }
+
     try {
       setUpdatingPin(true);
       const token = localStorage.getItem("token");
+
       const response = await fetch("/api/locker", {
         method: "PUT",
         headers: {
@@ -204,20 +221,15 @@ export default function AccountPage() {
           pinChanged: true,
         }),
       });
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to update PIN");
       }
+
       const data = await response.json();
       setLocker(data);
-      setShowChangePinCard(false);
-      setStep(1);
-      setCurrentPin("");
-      setVerificationCode("");
-      setNewPin("");
-      setConfirmPin("");
-      setCodeSent(false);
-      setCodeVerified(false);
+      resetPinFlow();
       alert("PIN updated successfully!");
     } catch (err: any) {
       alert(err.message || "Failed to update PIN");
@@ -226,9 +238,21 @@ export default function AccountPage() {
     }
   };
 
-  const handleEditProfile = () => {
-    setEditingProfile(true);
+  const resetPinFlow = () => {
+    setShowChangePinCard(false);
+    setStep(1);
+    setCurrentPin("");
+    setVerificationCode("");
+    setNewPin("");
+    setConfirmPin("");
+    setCodeSent(false);
+    setShowOldPin(false);
+    setShowCode(false);
+    setShowNewPin(false);
+    setShowConfirmPin(false);
   };
+
+  const handleEditProfile = () => setEditingProfile(true);
 
   const handleCancelEdit = () => {
     setEditingProfile(false);
@@ -243,9 +267,11 @@ export default function AccountPage() {
       alert("First name and last name are required");
       return;
     }
+
     try {
       setSaving(true);
       const token = localStorage.getItem("token");
+
       const response = await fetch("/api/users/profile", {
         method: "PUT",
         headers: {
@@ -257,17 +283,18 @@ export default function AccountPage() {
           lastName: editLastName.trim(),
         }),
       });
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to update profile");
       }
+
       const data = await response.json();
       setUser(data.user);
       setEditingProfile(false);
       alert("Profile updated successfully!");
     } catch (err: any) {
       alert(err.message || "Failed to update profile");
-      console.error("Profile update error:", err);
     } finally {
       setSaving(false);
     }
@@ -278,9 +305,11 @@ export default function AccountPage() {
       alert("Password required");
       return;
     }
+
     try {
       setDeleting(true);
       setDeleteError("");
+
       const token = localStorage.getItem("token");
       const response = await fetch("/api/users/profile", {
         method: "DELETE",
@@ -290,10 +319,12 @@ export default function AccountPage() {
         },
         body: JSON.stringify({ password: deletePassword }),
       });
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || "Failed to delete account");
       }
+
       alert("Account deleted successfully. You will be logged out.");
       setShowDeleteConfirm(false);
       setDeletePassword("");
@@ -311,11 +342,13 @@ export default function AccountPage() {
       alert("Password required");
       return;
     }
+
     try {
       setDeactivating(true);
       setDeactivateError("");
+
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/users/deactivate", {
+      const response = await fetch("/api/users/deactivate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -323,10 +356,12 @@ export default function AccountPage() {
         },
         body: JSON.stringify({ password: deactivatePassword }),
       });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
         throw new Error(data.error || "Failed");
       }
+
       alert("Account deactivated for 30 days");
       setShowDeactivateConfirm(false);
       setDeactivatePassword("");
@@ -346,31 +381,27 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!lockerLoading && locker) {
-      if (isLockedOut) {
-        setStep(2);
-      } else {
-        setStep(1);
-      }
+      setStep(isLockedOut ? 2 : 1);
     }
   }, [lockerLoading, locker, isLockedOut]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const token = localStorage.getItem("token");
+
     if (!token) {
       setIsAuthenticated(false);
       window.location.href = "/login";
       return;
     }
+
     setIsAuthenticated(true);
   }, []);
 
   useEffect(() => {
     if (isAuthenticated === true) {
-      const fetchData = async () => {
-        await Promise.all([fetchUserProfile(), fetchLocker()]);
-      };
-      fetchData();
+      Promise.all([fetchUserProfile(), fetchLocker()]);
     }
   }, [isAuthenticated]);
 
@@ -382,50 +413,30 @@ export default function AccountPage() {
       setNewPin("");
       setConfirmPin("");
       setCodeSent(false);
-      setCodeVerified(false);
     }
   }, [showChangePinCard, isLockedOut]);
 
   if (isAuthenticated === null) {
     return (
       <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
-        <div className="text-white text-xl font-extrabold animate-pulse">
+        <div className="text-white text-xl font-black uppercase tracking-widest animate-pulse">
           Checking authentication...
         </div>
       </main>
     );
   }
 
-  if (isAuthenticated === false) {
+  if (isAuthenticated === false || loading) {
     return (
-      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight">
-            Looks like you're not logged in
-          </div>
-          <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
-            Redirecting to login...
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (loading) {
-    return (
-      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
-        <div className="text-white text-xl font-extrabold animate-pulse">
-          Loading profile...
-        </div>
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center"> 
+        <div className="h-16 w-16 animate-spin rounded-full border-[5px] border-white/30 border-t-white" />
       </main>
     );
   }
 
   return (
     <>
-      <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-        
-        {/* Isolated Animation Framework — Ensuring NO changes to structure/layout */}
+      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] p-4 md:p-6 lg:p-8 flex flex-col overflow-hidden">
         <style jsx global>{`
           @keyframes pageReveal {
             from { opacity: 0; }
@@ -435,32 +446,17 @@ export default function AccountPage() {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
           }
-          @keyframes modalFade {
-            from { opacity: 0; }
-            to { opacity: 1; }
-          }
-          @keyframes modalScale {
-            from { opacity: 0; transform: scale(0.96); }
-            to { opacity: 1; transform: scale(1); }
-          }
           main {
             animation: pageReveal 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           }
-          header, section, .rounded-\[1\.75rem\] {
+          header, section, .account-card {
             animation: contentSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
           }
-          .modal-backdrop-node {
-            animation: modalFade 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-          }
-          .modal-content-node {
-            animation: modalScale 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-          }
-          header a, header nav a, button {
+          header a, button {
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
           }
           header a:hover, button:hover {
             filter: brightness(1.03);
-            transform: translateY(-0.5px);
           }
           button:active {
             transform: scale(0.98);
@@ -468,545 +464,517 @@ export default function AccountPage() {
         `}</style>
 
         <div className="mx-auto flex h-full w-full flex-col gap-4">
-          <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <Link href="/home" className="flex items-center">
+
+          {/* HEADER */}
+          <header className="relative z-[100] shrink-0 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-xl border border-white/30 shadow-lg">
+            <div className="flex items-center justify-between">
+              <Link
+                href="/home"
+                className="transition-transform duration-300 hover:scale-105"
+              >
                 <Image
                   src="/padalock-logo.png"
                   alt="PadaLock logo"
-                  width={340}
-                  height={70}
-                  className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
+                  width={200}
+                  height={50}
+                  className="w-28 md:w-40"
                   priority
                 />
               </Link>
 
-              <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
-                {navItems.map((item) => {
-                  const isActive = item.label === "ACCOUNT";
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className={`transition hover:opacity-80 ${
-                        isActive ? "font-extrabold" : ""
+              <nav className="hidden lg:flex gap-8 text-white font-bold">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`relative group transition-all duration-300 ${
+                      item.href === "/account"
+                        ? "text-white"
+                        : "text-white/80"
+                    }`}
+                  >
+                    {item.label}
+                    <span
+                      className={`absolute -bottom-1 left-0 h-0.5 bg-white transition-all duration-300 ${
+                        item.href === "/account"
+                          ? "w-full"
+                          : "w-0 group-hover:w-full"
                       }`}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                    />
+                  </Link>
+                ))}
+              </nav>
+
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="lg:hidden relative z-[110] p-2 focus:outline-none"
+                aria-label="Toggle Menu"
+              >
+                <div className="flex flex-col justify-between w-6 h-4">
+                  <span
+                    className={`h-0.5 w-full bg-white rounded-full transition-all origin-left ${
+                      isMenuOpen ? "rotate-45" : ""
+                    }`}
+                  />
+                  <span
+                    className={`h-0.5 w-full bg-white rounded-full transition-all ${
+                      isMenuOpen ? "opacity-0" : ""
+                    }`}
+                  />
+                  <span
+                    className={`h-0.5 w-full bg-white rounded-full transition-all origin-left ${
+                      isMenuOpen ? "-rotate-45" : ""
+                    }`}
+                  />
+                </div>
+              </button>
+            </div>
+
+            <div
+              className={`absolute left-0 right-0 top-full mt-3 px-2 transition-all duration-300 lg:hidden ${
+                isMenuOpen
+                  ? "opacity-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 -translate-y-4 pointer-events-none"
+              }`}
+            >
+              <nav className="flex flex-col overflow-hidden rounded-2xl bg-white/95 backdrop-blur-2xl p-2 shadow-2xl border border-white/40">
+                {navItems.map((item, idx) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setIsMenuOpen(false)}
+                    style={{ transitionDelay: `${idx * 50}ms` }}
+                    className={`p-4 text-[#df4473] font-bold hover:bg-pink-50 rounded-xl transition-all duration-200 ${
+                      isMenuOpen ? "translate-x-0" : "-translate-x-4"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
               </nav>
             </div>
           </header>
 
-          <section className="min-h-0 flex-1 overflow-hidden rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6">
-            <div className="flex h-full min-h-0 flex-col">
-              <div className="mb-5 flex shrink-0 flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <h1 className="text-2xl font-extrabold text-white md:text-3xl">
-                  Account Settings
-                </h1>
+          {/* MAIN */}
+          <section
+            className={`flex-1 rounded-[2.5rem] bg-black/5 backdrop-blur-md border border-white/20 p-6 md:p-10 shadow-inner overflow-y-auto ${scrollbarClass}`}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xs font-black text-white/80 uppercase tracking-[0.3em]">
+                Account Settings
+              </h2>
 
-                <button
-                  onClick={handleLogout}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#de517e] px-6 py-2.5 text-sm font-extrabold text-white transition hover:opacity-90 md:text-base"
-                >
-                  <LogOut className="h-4 w-4 md:h-5 md:w-5" />
-                  Logout
-                </button>
-              </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 text-white text-xs font-black uppercase tracking-widest hover:bg-white/20 border border-white/10"
+              >
+                <LogOut size={14} />
+                Logout
+              </button>
+            </div>
 
-              <div className={`min-h-0 flex-1 overflow-y-auto pr-1 ${scrollbarClass}`}>
-                <div className="flex flex-col gap-4 pb-1">
-                  
-                  {/* Profile Information Card */}
-                  <div className="rounded-[1.75rem] bg-white/45 p-4 md:p-5">
-                    <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#de517e] text-white">
-                          <User className="h-5 w-5" />
-                        </div>
-                        <h2 className="text-xl font-extrabold text-[#de517e] md:text-2xl">
-                          Profile Information
-                        </h2>
-                      </div>
+            <div className="flex flex-col gap-6 w-full">
 
-                      {!editingProfile ? (
-                        <button
-                          onClick={handleEditProfile}
-                          className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-[#de517e] px-5 py-2 text-sm font-extrabold text-[#de517e] transition hover:bg-[#de517e] hover:text-white md:text-base"
-                        >
-                          <Pencil className="h-4 w-4" />
-                          Edit Profile
-                        </button>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={handleCancelEdit}
-                            disabled={saving}
-                            className="rounded-full border-2 border-[#de517e] px-5 py-2 text-sm font-extrabold text-[#de517e] transition hover:bg-[#de517e] hover:text-white md:text-base disabled:opacity-50"
-                          >
-                            Cancel
-                          </button>
-                          <button
-                            onClick={handleSaveProfile}
-                            disabled={saving}
-                            className="inline-flex items-center justify-center gap-2 rounded-full bg-[#de517e] px-6 py-2 text-sm font-extrabold text-white transition hover:opacity-90 md:text-base disabled:opacity-50"
-                          >
-                            {saving ? (
-                              <>
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent md:h-5 md:w-5" />
-                                Saving...
-                              </>
-                            ) : (
-                              "Save"
-                            )}
-                          </button>
-                        </div>
-                      )}
+              {/* PROFILE */}
+              <div className="account-card group rounded-3xl bg-white/15 p-6 border border-white/10 shadow-lg hover:bg-white/20">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-xl text-white group-hover:scale-110">
+                      <User size={20} />
                     </div>
-
-                    {error ? (
-                      <div className="rounded-full bg-red-100/80 p-6 text-center text-red-800">
-                        <p className="text-lg font-semibold mb-2">{error}</p>
-                        <button
-                          onClick={fetchUserProfile}
-                          className="inline-flex items-center gap-2 rounded-full bg-red-500 px-6 py-2.5 text-sm font-extrabold text-white transition hover:bg-red-600"
-                        >
-                          Retry
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-[1fr_1fr_1.4fr]">
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-[#de517e] md:text-base">
-                            First Name
-                          </label>
-                          {editingProfile ? (
-                            <input
-                              type="text"
-                              value={editFirstName}
-                              onChange={(e) => setEditFirstName(e.target.value)}
-                              className="w-full rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] outline-none focus:border-2 focus:border-[#de517e] focus:ring-0 md:text-lg"
-                              autoFocus
-                            />
-                          ) : (
-                            <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
-                              {user?.firstName || "N/A"}
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-[#de517e] md:text-base">
-                            Last Name
-                          </label>
-                          {editingProfile ? (
-                            <input
-                              type="text"
-                              value={editLastName}
-                              onChange={(e) => setEditLastName(e.target.value)}
-                              className="w-full rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] outline-none focus:border-2 focus:border-[#de517e] focus:ring-0 md:text-lg"
-                            />
-                          ) : (
-                            <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg">
-                              {user?.lastName || "N/A"}
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="md:col-span-2 xl:col-span-1">
-                          <label className="mb-2 block text-sm font-semibold text-[#de517e] md:text-base">
-                            Email
-                          </label>
-                          <div className="rounded-full bg-[#f6f1f3] px-5 py-3 text-base text-[#d695aa] md:text-lg break-all">
-                            {user?.email || "N/A"}
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                    <h3 className="font-bold text-white uppercase tracking-wider">
+                      Profile Info
+                    </h3>
                   </div>
 
-                  {/* Locker PIN Card */}
-                  <div className="rounded-[1.75rem] bg-white/45 p-4 md:p-5">
-                    <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#de517e] text-white">
-                          <LockKeyhole className="h-5 w-5" />
-                        </div>
-                        <h2 className="text-xl font-extrabold text-[#de517e] md:text-2xl">
-                          Locker PIN
-                        </h2>
-                      </div>
-
-                      {(!editingProfile && lockerLoading) ? (
-                        <div className="flex items-center justify-center py-4">
-                          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#de517e]/50 border-t-[#de517e] md:h-8 md:w-8" />
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => setShowChangePinCard((prev) => !prev)}
-                          disabled={lockerLoading || updatingPin}
-                          className={`inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-extrabold transition md:text-base ${
-                            showChangePinCard
-                              ? "bg-[#de517e] text-white hover:opacity-90"
-                              : "border-2 border-[#de517e] text-[#de517e] hover:bg-[#de517e] hover:text-white"
-                          } ${lockerLoading || updatingPin ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >
-                          {showChangePinCard ? "Cancel" : "Update PIN"}
-                        </button>
-                      )}
-                    </div>
-
-                    {!lockerLoading && !locker && (
-                      <div className="text-center py-12 text-[#d46a1a]/80">
-                        <LockKeyhole className="mx-auto h-16 w-16 mb-4 opacity-50" />
-                        <p className="text-xl font-semibold mb-2">No locker assigned</p>
-                        <p className="text-base">Create a locker to set up your PIN</p>
-                      </div>
-                    )}
-
-                    {locker && (
-                      <div className="rounded-[1.5rem] bg-[#f3dfd0] px-4 py-4 md:px-5">
-                        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                          <div className="min-w-0">
-                            <h3 className="text-xl font-extrabold text-[#d46a1a] md:text-2xl">
-                              Current PIN
-                            </h3>
-                            <p className="text-sm text-[#d46a1a] md:text-base">
-                              Used to open the PadaBox for parcel retrieval.
-                            </p>
-                          </div>
-
-                          <div className="relative w-full lg:max-w-[320px]">
-                            <input
-                              type={showCurrentPin ? "text" : "password"}
-                              value={showCurrentPin ? (locker?.pin || "••••") : formatPinDisplay(locker?.pin)}
-                              readOnly
-                              className="w-full rounded-full bg-white/70 py-3 pl-6 pr-14 text-center text-xl tracking-[0.35em] text-[#d46a1a] outline-none"
-                              placeholder="No PIN set"
-                            />
-                            <button
-                              onClick={() => setShowCurrentPin((prev) => !prev)}
-                              disabled={!locker?.pin}
-                              className={`absolute inset-y-0 right-4 flex items-center transition hover:opacity-80 ${
-                                !locker?.pin ? "opacity-50 cursor-not-allowed text-[#d46a1a]/50" : "text-[#d46a1a]"
-                              }`}
-                            >
-                              {showCurrentPin ? (
-                                <EyeOff className="h-6 w-6" />
-                              ) : (
-                                <Eye className="h-6 w-6" />
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Change PIN Card */}
-                  {showChangePinCard && locker && (
-                    <div className="rounded-[1.75rem] bg-[#e7b8c8]/85 p-4 md:p-5">
-                      <div className="mb-5 flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#de517e]">
-                          <LockKeyhole className="h-5 w-5" />
-                        </div>
-                        <h2 className="text-xl font-extrabold text-white md:text-2xl">
-                          {isLockedOut ? "Recover Locked Locker" : "Change PIN"}
-                        </h2>
-                      </div>
-
-                      {/* LOCKOUT WARNING */}
-                      {isLockedOut && (
-                        <div className="mb-6 rounded-2xl bg-white/40 p-4 border-2 border-[#de517e] text-[#de517e]">
-                          <p className="text-center font-bold">
-                            ⚠️ This locker is currently locked out due to multiple failed attempts. Verify your identity via email to set a new PIN.
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="relative flex flex-col gap-4">
-                        <div className="absolute bottom-10 left-[1.7rem] top-10 hidden w-[2px] bg-[#de517e]/65 md:block" />
-
-                        {/* STEP 1: Current PIN (Hidden if Locked Out) */}
-                        {!isLockedOut && (
-                          <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 1 ? "opacity-50" : ""}`}>
-                            <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 1 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
-                              1
-                            </div>
-                            <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
-                                  Enter current 4-digit PIN
-                                </p>
-                                <div className="relative w-full lg:w-[360px]">
-                                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
-                                  <input
-                                    type={showOldPin ? "text" : "password"}
-                                    maxLength={4}
-                                    value={currentPin}
-                                    onChange={(e) => setCurrentPin(e.target.value)}
-                                    placeholder="Enter 4-digit PIN"
-                                    disabled={step !== 1}
-                                    className="h-14 w-full rounded-full bg-[#f7f7f7] pl-12 pr-14 text-base text-[#de517e] outline-none placeholder:text-[#e08ca8] md:text-lg disabled:opacity-50"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowOldPin((prev) => !prev)}
-                                    className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
-                                  >
-                                    {showOldPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                  </button>
-                                </div>
-                              </div>
-                              {step === 1 && (
-                                <button
-                                  onClick={handleVerifyCurrentPin}
-                                  disabled={currentPin.length !== 4 || updatingPin}
-                                  className="mt-4 w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
-                                >
-                                  Next
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* STEP 2: Email Verification */}
-                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 2 ? "opacity-50" : ""}`}>
-                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 2 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
-                            {isLockedOut ? 1 : 2}
-                          </div>
-                          <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                            <div className="flex flex-col gap-4">
-                              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                                <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
-                                  {codeSent ? "Enter verification code" : "Send verification code to email"}
-                                </p>
-                                <div className="relative w-full lg:w-[360px]">
-                                  <Send className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
-                                  <input
-                                    type={showCode ? "text" : "password"}
-                                    maxLength={6}
-                                    value={verificationCode}
-                                    onChange={(e) => setVerificationCode(e.target.value)}
-                                    placeholder={codeSent ? "Enter 6-digit code" : "Click send code"}
-                                    disabled={step !== 2}
-                                    className="h-14 w-full rounded-full bg-[#f7f7f7] pl-12 pr-14 text-base text-[#de517e] outline-none placeholder:text-[#e08ca8] md:text-lg disabled:opacity-50"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setShowCode((prev) => !prev)}
-                                    className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
-                                  >
-                                    {showCode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                                {!codeSent ? (
-                                  <button
-                                    onClick={handleSendVerificationCode}
-                                    disabled={updatingPin}
-                                    className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
-                                  >
-                                    Send Code
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={handleVerifyCode}
-                                    disabled={verificationCode.length !== 6 || updatingPin}
-                                    className="rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
-                                  >
-                                    Verify
-                                  </button>
-                                )}
-                                {codeSent && (
-                                  <button
-                                    onClick={handleResendCode}
-                                    disabled={updatingPin}
-                                    className="rounded-full border-2 border-[#de517e] bg-transparent px-6 py-3 text-base font-extrabold text-[#de517e] transition hover:bg-[#de517e] hover:text-white md:text-lg"
-                                  >
-                                    Resend
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* STEP 3: Enter New PIN */}
-                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 3 ? "opacity-50" : ""}`}>
-                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 3 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
-                            {isLockedOut ? 2 : 3}
-                          </div>
-                          <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                              <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
-                                Enter New PIN
-                              </p>
-                              <div className="relative w-full lg:w-[360px]">
-                                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
-                                <input
-                                  type={showNewPin ? "text" : "password"}
-                                  maxLength={4}
-                                  value={newPin}
-                                  onChange={(e) => setNewPin(e.target.value)}
-                                  placeholder="Enter new 4-digit PIN"
-                                  disabled={step !== 3}
-                                  className="h-14 w-full rounded-full bg-[#f7f7f7] pl-12 pr-14 text-base text-[#de517e] outline-none placeholder:text-[#e08ca8] md:text-lg disabled:opacity-50"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowNewPin((prev) => !prev)}
-                                  className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
-                                >
-                                  {showNewPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                </button>
-                              </div>
-                            </div>
-                            {step === 3 && (
-                              <button
-                                onClick={() => setStep(4)}
-                                disabled={newPin.length !== 4 || updatingPin}
-                                className="mt-4 w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
-                              >
-                                Next
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* STEP 4: Confirm New PIN */}
-                        <div className={`relative flex flex-col gap-3 md:flex-row md:items-center ${step !== 4 ? "opacity-50" : ""}`}>
-                          <div className={`z-10 flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#de517e] text-xl font-extrabold text-white ${step > 4 ? "ring-2 ring-[#de517e]/50 bg-[#de517e]/80" : ""}`}>
-                            {isLockedOut ? 3 : 4}
-                          </div>
-                          <div className="flex-1 rounded-[1.5rem] bg-white/65 px-4 py-4 md:px-6">
-                            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                              <p className="text-lg font-extrabold text-[#de517e] md:text-2xl">
-                                Confirm New PIN
-                              </p>
-                              <div className="relative w-full lg:w-[360px]">
-                                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#de517e]" />
-                                <input
-                                  type={showConfirmPin ? "text" : "password"}
-                                  maxLength={4}
-                                  value={confirmPin}
-                                  onChange={(e) => setConfirmPin(e.target.value)}
-                                  placeholder="Confirm new PIN"
-                                  disabled={step !== 4}
-                                  className="h-14 w-full rounded-full bg-[#f7f7f7] pl-12 pr-14 text-base text-[#de517e] outline-none placeholder:text-[#e08ca8] md:text-lg disabled:opacity-50"
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => setShowConfirmPin((prev) => !prev)}
-                                  className="absolute inset-y-0 right-4 flex items-center text-[#de517e] transition hover:opacity-80"
-                                >
-                                  {showConfirmPin ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* FINAL ACTION BUTTON */}
-                        {step === 4 && (
-                          <div className="pt-1">
-                            <button
-                              onClick={handleUpdatePin}
-                              disabled={newPin.length !== 4 || confirmPin.length !== 4 || newPin !== confirmPin || updatingPin}
-                              className="w-full rounded-full bg-[#de517e] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
-                            >
-                              {updatingPin ? (
-                                <>
-                                  <div className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-2" />
-                                  Updating PIN...
-                                </>
-                              ) : (
-                                "Update PIN"
-                              )}
-                            </button>
-                            {newPin !== confirmPin && newPin.length === 4 && confirmPin.length === 4 && (
-                              <p className="mt-2 text-sm text-red-400 text-center">PINs do not match</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                  {!editingProfile ? (
+                    <button
+                      onClick={handleEditProfile}
+                      className="text-xs font-black text-white/60 hover:text-white uppercase tracking-widest"
+                    >
+                      Edit
+                    </button>
+                  ) : (
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleCancelEdit}
+                        disabled={saving}
+                        className="text-xs font-black text-white/60 hover:text-white uppercase tracking-widest disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={saving}
+                        className="px-4 py-2 rounded-xl bg-white text-[#df4473] text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                      >
+                        {saving ? "Saving..." : "Save"}
+                      </button>
                     </div>
                   )}
+                </div>
 
-                  {/* Account Deactivation Card */}
-                  <div className="rounded-[1.75rem] bg-[#f5d68a]/95 p-4 md:p-5">
-                    <div className="mb-5 flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#b7791f]">
-                        <LockKeyhole className="h-5 w-5" />
-                      </div>
-                      <h2 className="text-xl font-extrabold text-white md:text-2xl">
-                        Account Deactivation
-                      </h2>
+                {error ? (
+                  <div className="rounded-2xl bg-red-500/10 border border-red-400/20 p-5 text-center text-red-100">
+                    <p className="font-semibold mb-3">{error}</p>
+                    <button
+                      onClick={fetchUserProfile}
+                      className="px-5 py-2 rounded-xl bg-red-500 text-white font-bold"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1 mb-2 block">
+                        First Name
+                      </label>
+                      <input
+                        disabled={!editingProfile}
+                        value={editFirstName}
+                        onChange={(e) => setEditFirstName(e.target.value)}
+                        className="w-full h-12 rounded-2xl bg-white/10 border border-white/20 px-4 text-white outline-none focus:bg-white/20 disabled:opacity-50"
+                      />
                     </div>
 
-                    <div className="rounded-[1.5rem] bg-white/70 px-4 py-4 md:px-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                          <h3 className="text-xl font-extrabold text-[#b7791f] md:text-2xl">
-                            Deactivate Account
-                          </h3>
-                          <p className="text-sm text-[#b7791f] md:text-base">
-                            Your account will be disabled for 30 days. You can log back in to restore it.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setShowDeactivateConfirm(true)}
-                          className="inline-flex items-center justify-center rounded-full bg-[#b7791f] px-6 py-3 text-base font-extrabold text-white shadow-sm"
-                        >
-                          Deactivate
-                        </button>
+                    <div>
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1 mb-2 block">
+                        Last Name
+                      </label>
+                      <input
+                        disabled={!editingProfile}
+                        value={editLastName}
+                        onChange={(e) => setEditLastName(e.target.value)}
+                        className="w-full h-12 rounded-2xl bg-white/10 border border-white/20 px-4 text-white outline-none focus:bg-white/20 disabled:opacity-50"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] font-black text-white/40 uppercase tracking-widest ml-1 mb-2 block">
+                        Email Address
+                      </label>
+                      <div className="w-full min-h-12 flex items-center rounded-2xl bg-white/5 border border-white/5 px-4 py-3 text-white/60 text-sm break-all">
+                        {user?.email}
                       </div>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  {/* Account Deletion Card */}
-                  <div className="rounded-[1.75rem] bg-[#f28a92]/95 p-4 md:p-5">
-                    <div className="mb-5 flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#ef1f1f]">
-                        <Trash2 className="h-5 w-5" />
-                      </div>
-                      <h2 className="text-xl font-extrabold text-white md:text-2xl">
-                        Account Deletion
-                      </h2>
+              {/* LOCKER PIN */}
+              <div className="account-card rounded-3xl bg-white/15 p-6 border border-white/10 shadow-lg">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white/20 rounded-xl text-white">
+                      <LockKeyhole size={20} />
+                    </div>
+                    <h3 className="font-bold text-white uppercase tracking-wider">
+                      Security
+                    </h3>
+                  </div>
+
+                  {showChangePinCard && (
+                    <button
+                      onClick={resetPinFlow}
+                      className="text-white/50 hover:text-white"
+                    >
+                      <X size={20} />
+                    </button>
+                  )}
+                </div>
+
+                {!showChangePinCard ? (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-black/20 border border-white/5">
+                    <div className="text-center sm:text-left">
+                      <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">
+                        Locker PIN
+                      </p>
+                      <p className="text-xl font-bold text-white tracking-[0.3em]">
+                        {locker?.pin
+                          ? showCurrentPin
+                            ? formatPinDisplay(locker.pin)
+                            : "••••"
+                          : "••••"}
+                      </p>
                     </div>
 
-                    <div className="rounded-[1.5rem] bg-white/70 px-4 py-4 md:px-5">
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                          <h3 className="text-xl font-extrabold text-[#ef1f1f] md:text-2xl">
-                            Delete Account
-                          </h3>
-                          <p className="text-sm text-[#ef1f1f] md:text-base">
-                            This will permanently delete your account and all records. This action cannot be undone.
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => setShowDeleteConfirm(true)}
-                          disabled={deleting}
-                          className="inline-flex items-center justify-center rounded-full bg-[#ef1f1f] px-6 py-3 text-base font-extrabold text-white transition hover:opacity-90 md:text-lg disabled:opacity-50"
-                        >
-                          {deleting ? (
-                            <>
-                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent md:h-5 md:w-5" />
-                              Deleting...
-                            </>
-                          ) : (
-                            "Delete Account"
+                    <button
+                      onClick={() => setShowChangePinCard(true)}
+                      disabled={lockerLoading}
+                      className="px-8 py-3.5 rounded-xl bg-[#df4473] text-white text-xs font-black uppercase tracking-widest shadow-lg hover:scale-105 disabled:opacity-50"
+                    >
+                      Update PIN
+                    </button>
+                  </div>
+                ) : locker ? (
+                  <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="flex gap-2 mb-8">
+                      {[1, 2, 3, 4].map((s) => (
+                        <div
+                          key={s}
+                          className={`h-1.5 flex-1 rounded-full transition-all ${
+                            step >= s
+                              ? "bg-[#df4473]"
+                              : "bg-white/10"
+                          }`}
+                        />
+                      ))}
+                    </div>
+
+                    <div className="max-w-2xl mx-auto space-y-6">
+
+                      {!isLockedOut && (
+                        <div className={`${step !== 1 ? "opacity-50" : ""}`}>
+                          <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+                            Enter Current PIN
+                          </label>
+
+                          <div className="relative mt-2">
+                            <input
+                              type={showOldPin ? "text" : "password"}
+                              maxLength={4}
+                              value={currentPin}
+                              onChange={(e) => setCurrentPin(e.target.value)}
+                              placeholder="••••"
+                              disabled={step !== 1}
+                              className="w-full h-14 rounded-2xl bg-white/10 border border-white/20 px-5 pr-14 text-white text-center text-2xl tracking-[0.5em] outline-none focus:bg-white/20 disabled:opacity-50"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowOldPin((v) => !v)}
+                              className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60"
+                            >
+                              {showOldPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                          </div>
+
+                          {step === 1 && (
+                            <button
+                              onClick={handleVerifyCurrentPin}
+                              disabled={currentPin.length !== 4 || updatingPin}
+                              className="w-full mt-3 h-12 rounded-2xl bg-[#df4473] text-white font-black uppercase tracking-widest disabled:opacity-50"
+                            >
+                              Verify PIN
+                            </button>
                           )}
-                        </button>
+                        </div>
+                      )}
+
+                      <div className={`${step !== 2 ? "opacity-50" : ""}`}>
+                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+                          {codeSent
+                            ? "Verification Code"
+                            : "Email Verification"}
+                        </label>
+
+                        <div className="relative mt-2">
+                          <input
+                            type={showCode ? "text" : "password"}
+                            maxLength={6}
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            placeholder={
+                              codeSent ? "Enter 6-digit code" : "Send code first"
+                            }
+                            disabled={step !== 2}
+                            className="w-full h-14 rounded-2xl bg-white/10 border border-white/20 px-5 pr-14 text-white text-center text-xl tracking-widest outline-none focus:bg-white/20 disabled:opacity-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCode((v) => !v)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60"
+                          >
+                            {showCode ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                          {!codeSent ? (
+                            <button
+                              onClick={handleSendVerificationCode}
+                              disabled={updatingPin || step !== 2}
+                              className="h-12 rounded-2xl bg-[#df4473] text-white font-black uppercase tracking-widest disabled:opacity-50"
+                            >
+                              <Send size={16} className="inline mr-2" />
+                              Send Code
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleVerifyCode}
+                              disabled={
+                                verificationCode.length !== 6 ||
+                                updatingPin ||
+                                step !== 2
+                              }
+                              className="h-12 rounded-2xl bg-[#df4473] text-white font-black uppercase tracking-widest disabled:opacity-50"
+                            >
+                              Verify Code
+                            </button>
+                          )}
+
+                          {codeSent && (
+                            <button
+                              onClick={handleResendCode}
+                              disabled={updatingPin}
+                              className="h-12 rounded-2xl border border-white/30 bg-white/10 text-white font-black uppercase tracking-widest disabled:opacity-50"
+                            >
+                              Resend
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className={`${step !== 3 ? "opacity-50" : ""}`}>
+                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+                          New 4-Digit PIN
+                        </label>
+
+                        <div className="relative mt-2">
+                          <input
+                            type={showNewPin ? "text" : "password"}
+                            maxLength={4}
+                            value={newPin}
+                            onChange={(e) => setNewPin(e.target.value)}
+                            placeholder="••••"
+                            disabled={step !== 3}
+                            className="w-full h-14 rounded-2xl bg-white/10 border border-white/20 px-5 pr-14 text-white text-center text-2xl tracking-[0.5em] outline-none focus:bg-white/20 disabled:opacity-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPin((v) => !v)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60"
+                          >
+                            {showNewPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
+
+                        {step === 3 && (
+                          <button
+                            onClick={() => setStep(4)}
+                            disabled={newPin.length !== 4}
+                            className="w-full mt-3 h-12 rounded-2xl bg-[#df4473] text-white font-black uppercase tracking-widest disabled:opacity-50"
+                          >
+                            Next
+                          </button>
+                        )}
+                      </div>
+
+                      <div className={`${step !== 4 ? "opacity-50" : ""}`}>
+                        <label className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">
+                          Confirm New PIN
+                        </label>
+
+                        <div className="relative mt-2">
+                          <input
+                            type={showConfirmPin ? "text" : "password"}
+                            maxLength={4}
+                            value={confirmPin}
+                            onChange={(e) => setConfirmPin(e.target.value)}
+                            placeholder="••••"
+                            disabled={step !== 4}
+                            className="w-full h-14 rounded-2xl bg-white/10 border border-white/20 px-5 pr-14 text-white text-center text-2xl tracking-[0.5em] outline-none focus:bg-white/20 disabled:opacity-50"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPin((v) => !v)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60"
+                          >
+                            {showConfirmPin ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
+
+                        {step === 4 && (
+                          <>
+                            <button
+                              onClick={handleUpdatePin}
+                              disabled={
+                                newPin.length !== 4 ||
+                                confirmPin.length !== 4 ||
+                                newPin !== confirmPin ||
+                                updatingPin
+                              }
+                              className="w-full mt-3 h-12 rounded-2xl bg-[#df4473] text-white font-black uppercase tracking-widest disabled:opacity-50"
+                            >
+                              {updatingPin ? "Updating PIN..." : "Save New PIN"}
+                            </button>
+
+                            {newPin.length === 4 &&
+                              confirmPin.length === 4 &&
+                              newPin !== confirmPin && (
+                                <p className="text-red-300 text-xs font-bold text-center mt-2">
+                                  PINs do not match
+                                </p>
+                              )}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
+                ) : (
+                  <div className="p-8 rounded-2xl bg-black/20 text-center text-white/60">
+                    No locker assigned.
+                  </div>
+                )}
+              </div>
 
+              {/* DEACTIVATION */}
+              <div className="account-card rounded-3xl bg-[#f5d68a]/20 p-6 border border-yellow-200/20 hover:bg-[#f5d68a]/25">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white/15 rounded-xl text-yellow-100">
+                    <LockKeyhole size={20} />
+                  </div>
+                  <h3 className="font-bold text-white uppercase tracking-wider">
+                    Account Deactivation
+                  </h3>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-black/15 border border-white/5">
+                  <div>
+                    <p className="font-bold text-white">
+                      Deactivate Account
+                    </p>
+                    <p className="text-xs text-white/60 mt-1">
+                      Your account will be disabled for 30 days.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowDeactivateConfirm(true)}
+                    className="px-6 py-3 rounded-xl bg-[#b7791f] text-white text-xs font-black uppercase tracking-widest"
+                  >
+                    Deactivate
+                  </button>
+                </div>
+              </div>
+
+              {/* DELETION */}
+              <div className="account-card rounded-3xl bg-red-500/5 p-6 border border-red-400/20 hover:bg-red-500/10">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-red-500/50 rounded-xl text-red-300">
+                    <Trash2 size={20} />
+                  </div>
+                  <h3 className="font-bold text-white uppercase tracking-wider">
+                    Account Deletion
+                  </h3>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-5 rounded-2xl bg-black/15 border border-white/5">
+                  <div>
+                    <p className="font-bold text-white">
+                      Delete Account
+                    </p>
+                    <p className="text-xs text-white/60 mt-1">
+                    Permanently delete your account and associated data.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-11 py-3 rounded-xl bg-red-500/75 text-white text-xs font-black uppercase tracking-widest"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>
@@ -1014,62 +982,58 @@ export default function AccountPage() {
         </div>
       </main>
 
-      {/* Floating Delete Confirmation Modal */}
+      {/* DELETE MODAL */}
       {showDeleteConfirm && (
         <>
           <div
-            className="modal-backdrop-node fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowDeleteConfirm(false)}
+            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl"
+            onClick={() => !deleting && setShowDeleteConfirm(false)}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="modal-content-node w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
+
+          <div className="fixed inset-0 z-[201] flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-[2.5rem] bg-[#f4eff1] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#ef1f1f]/20 p-2">
-                    <Trash2 className="h-6 w-6 text-[#ef1f1f]" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-500">
+                    <Trash2 size={24} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-extrabold text-[#ef1f1f] md:text-3xl">
+                    <h3 className="text-2xl font-black text-[#df4473] uppercase">
                       Final Confirmation
                     </h3>
-                    <p className="text-sm text-[#ef1f1f]/80">
+                    <p className="text-sm text-red-500/70">
                       This action cannot be undone
                     </p>
                   </div>
                 </div>
+
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={deleting}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-[#ef1f1f] transition hover:bg-[#ef1f1f]/10 disabled:opacity-50 md:h-12 md:w-12"
+                  className="text-red-500"
                 >
-                  <X className="h-5 w-5 md:h-6 md:w-6" />
+                  <X />
                 </button>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <p className="mb-4 text-lg font-semibold text-gray-800">
-                    Are you absolutely sure you want to delete your PadaLock account?
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    This will permanently delete your account. All associated data including activity records and locker access will be queued for deletion and you will no longer be able to track your parcels. This action cannot be undone.
-                  </p>
-                </div>
+              <div className="space-y-5">
+                <p className="text-gray-700">
+                  Are you absolutely sure you want to delete your PadaLock
+                  account? This action cannot be undone.
+                </p>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
                     Enter your password to confirm
                   </label>
-                  <div className="relative">
-                    <input
-                      type="password"
-                      value={deletePassword}
-                      onChange={(e) => setDeletePassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 pr-14 text-base text-gray-800 outline-none ring-0 focus:border-2 focus:border-[#ef1f1f] focus:bg-white md:text-lg"
-                      disabled={deleting}
-                    />
-                  </div>
+                  <input
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Enter your password"
+                    disabled={deleting}
+                    className="w-full h-14 rounded-2xl bg-white border-2 border-gray-200 px-5 text-gray-800 outline-none focus:border-red-500"
+                  />
                   {deleteError && (
                     <p className="mt-2 text-sm text-red-500 font-semibold">
                       {deleteError}
@@ -1077,30 +1041,24 @@ export default function AccountPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => {
                       setShowDeleteConfirm(false);
                       setDeletePassword("");
                     }}
                     disabled={deleting}
-                    className="flex-1 rounded-[1.5rem] border-2 border-[#ef1f1f] bg-transparent px-6 py-4 font-extrabold text-[#ef1f1f] transition hover:bg-[#ef1f1f] hover:text-white disabled:opacity-50 md:text-lg"
+                    className="flex-1 h-14 rounded-2xl border-2 border-red-500 text-red-500 font-black uppercase text-xs tracking-widest"
                   >
                     Cancel
                   </button>
+
                   <button
                     onClick={handleDeleteAccount}
                     disabled={deleting || !deletePassword}
-                    className="flex-1 inline-flex items-center justify-center rounded-[1.5rem] bg-[#ef1f1f] px-6 py-4 font-extrabold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed md:text-lg"
+                    className="flex-1 h-14 rounded-2xl bg-red-500 text-white font-black uppercase text-xs tracking-widest disabled:opacity-50"
                   >
-                    {deleting ? (
-                      <>
-                        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-2 md:h-6 md:w-6" />
-                        <span>Deleting...</span>
-                      </>
-                    ) : (
-                      "Yes, Delete My Account"
-                    )}
+                    {deleting ? "Deleting..." : "Yes, Delete My Account"}
                   </button>
                 </div>
               </div>
@@ -1109,50 +1067,48 @@ export default function AccountPage() {
         </>
       )}
 
-      {/* Floating Deactivate Confirmation Modal */}
+      {/* DEACTIVATE MODAL */}
       {showDeactivateConfirm && (
         <>
           <div
-            className="modal-backdrop-node fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
-            onClick={() => setShowDeactivateConfirm(false)}
+            className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-xl"
+            onClick={() => !deactivating && setShowDeactivateConfirm(false)}
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="modal-content-node w-full max-w-md transform rounded-[2rem] bg-white/95 p-8 shadow-2xl backdrop-blur-sm transition-all sm:p-10">
+
+          <div className="fixed inset-0 z-[201] flex items-center justify-center p-4">
+            <div className="w-full max-w-md rounded-[2.5rem] bg-[#f4eff1] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white">
               <div className="mb-6 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#b7791f]/20 p-2">
-                    <LockKeyhole className="h-6 w-6 text-[#b7791f]" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 text-[#b7791f]">
+                    <LockKeyhole size={24} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-extrabold text-[#b7791f] md:text-3xl">
+                    <h3 className="text-2xl font-black text-[#b7791f] uppercase">
                       Deactivate Account
                     </h3>
-                    <p className="text-sm text-[#b7791f]/80">
+                    <p className="text-sm text-[#b7791f]/70">
                       This action is temporary
                     </p>
                   </div>
                 </div>
+
                 <button
                   onClick={() => setShowDeactivateConfirm(false)}
                   disabled={deactivating}
-                  className="flex h-10 w-10 items-center justify-center rounded-full text-[#b7791f] hover:bg-[#b7791f]/10"
+                  className="text-[#b7791f]"
                 >
-                  <X className="h-5 w-5" />
+                  <X />
                 </button>
               </div>
 
-              <div className="space-y-6">
-                <div>
-                  <p className="mb-4 text-lg font-semibold text-gray-800">
-                    Are you sure you want to deactivate your account?
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Your account will be disabled for 30 days. You can restore it by logging in.
-                  </p>
-                </div>
+              <div className="space-y-5">
+                <p className="text-gray-700">
+                  Your account will be disabled for 30 days. You can restore
+                  it by logging in.
+                </p>
 
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                  <label className="mb-2 block text-sm font-bold text-gray-700">
                     Enter your password to confirm
                   </label>
                   <input
@@ -1160,7 +1116,8 @@ export default function AccountPage() {
                     value={deactivatePassword}
                     onChange={(e) => setDeactivatePassword(e.target.value)}
                     placeholder="Enter your password"
-                    className="w-full rounded-[1.5rem] bg-gray-50 px-5 py-4 text-base outline-none focus:border-2 focus:border-[#b7791f]"
+                    disabled={deactivating}
+                    className="w-full h-14 rounded-2xl bg-white border-2 border-gray-200 px-5 text-gray-800 outline-none focus:border-[#b7791f]"
                   />
                   {deactivateError && (
                     <p className="mt-2 text-sm text-red-500 font-semibold">
@@ -1169,21 +1126,22 @@ export default function AccountPage() {
                   )}
                 </div>
 
-                <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={() => {
                       setShowDeactivateConfirm(false);
                       setDeactivatePassword("");
                     }}
                     disabled={deactivating}
-                    className="flex-1 rounded-[1.5rem] border-2 border-[#b7791f] px-6 py-4 font-extrabold text-[#b7791f] hover:bg-[#b7791f] hover:text-white"
+                    className="flex-1 h-14 rounded-2xl border-2 border-[#b7791f] text-[#b7791f] font-black uppercase text-xs tracking-widest"
                   >
                     Cancel
                   </button>
+
                   <button
                     onClick={handleDeactivateAccount}
                     disabled={deactivating || !deactivatePassword}
-                    className="flex-1 rounded-[1.5rem] bg-[#b7791f] px-6 py-4 font-extrabold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 h-14 rounded-2xl bg-[#b7791f] text-white font-black uppercase text-xs tracking-widest disabled:opacity-50"
                   >
                     {deactivating ? "Processing..." : "Deactivate"}
                   </button>

@@ -22,7 +22,7 @@ const navItems = [
   { label: "ACCOUNT", href: "/account" },
 ];
 
-const filterTabs = ["All", "Pending", "Delivered", "Retrieved"];
+const filterTabs = ["ALL", "PENDING", "DELIVERED", "RETRIEVED"];
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   PENDING: { bg: "bg-[#edd9cb]", text: "text-[#d46800]" },
@@ -47,6 +47,7 @@ export default function RegisterPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTrackingNumber, setEditTrackingNumber] = useState("");
   const [editParcelName, setEditParcelName] = useState("");
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -286,53 +287,91 @@ export default function RegisterPage() {
 
   if (loading) {
     return (
-      <main className="h-screen bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] flex items-center justify-center">
-        <div className="text-white text-xl font-extrabold animate-pulse">Loading register...</div>
+      <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1]">
+        <div className="h-16 w-16 animate-spin rounded-full border-[5px] border-white/30 border-t-white" />
       </main>
     );
   }
 
   return (
-    <main className="h-screen overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] px-4 py-4 md:px-6 md:py-5 lg:px-8 lg:py-6">
-      {/* Global CSS Injector for Keyframe Animations */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-        .animate-slide-up {
-          animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-      `}</style>
+    <main className="min-h-screen lg:h-screen lg:overflow-hidden bg-gradient-to-b from-[#df4473] via-[#e99ab1] to-[#f4eff1] p-4 md:p-6 lg:p-8 flex flex-col">
+      <div className="mx-auto flex h-full w-full flex-col gap-4 flex-1">
 
-      <div className="mx-auto flex h-full w-full flex-col gap-4 animate-fade-in">
-        <header className="shrink-0 rounded-[1.5rem] bg-[#FFFFFF]/25 px-4 py-3 backdrop-blur-sm md:px-6 md:py-3 lg:px-8 lg:py-4 transition-all duration-300 hover:bg-[#FFFFFF]/30">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <Link href="/home" className="flex items-center transition-transform duration-200 hover:scale-105 active:scale-95">
+        {/* HEADER */}
+        <header className="relative z-[100] shrink-0 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-xl border border-white/30 shadow-lg transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <Link href="/home" className="transition-transform duration-300 hover:scale-105">
               <Image
                 src="/padalock-logo.png"
                 alt="PadaLock logo"
-                width={340}
-                height={70}
-                className="h-auto w-[140px] sm:w-[180px] md:w-[220px] lg:w-[260px]"
+                width={200}
+                height={50}
+                className="w-28 md:w-40"
                 priority
               />
             </Link>
 
-            <nav className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs font-medium text-white sm:text-sm md:text-base lg:justify-end lg:gap-x-6 lg:text-lg">
+            <nav className="hidden lg:flex gap-8 text-white font-bold">
               {navItems.map((item) => (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`transition-all duration-200 hover:opacity-100 hover:text-white/80 hover:-translate-y-0.5 transform ${
-                    item.href === "/register" ? "font-extrabold" : "opacity-80"
+                  className="relative group transition-all duration-300"
+                >
+                  {item.label}
+                  <span
+                    className={`absolute -bottom-1 left-0 h-0.5 bg-white transition-all duration-300 ${
+                      item.href === "/register"
+                        ? "w-full"
+                        : "w-0 group-hover:w-full"
+                    }`}
+                  />
+                </Link>
+              ))}
+            </nav>
+
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="lg:hidden relative z-[110] p-2 focus:outline-none"
+              aria-label="Toggle navigation menu"
+            >
+              <div className="flex flex-col justify-between w-6 h-4 transform transition-all duration-300">
+                <span
+                  className={`h-0.5 w-full bg-white rounded-full transition-all duration-300 origin-left ${
+                    isMenuOpen ? "rotate-45" : ""
+                  }`}
+                />
+                <span
+                  className={`h-0.5 w-full bg-white rounded-full transition-all duration-300 ${
+                    isMenuOpen ? "opacity-0" : ""
+                  }`}
+                />
+                <span
+                  className={`h-0.5 w-full bg-white rounded-full transition-all duration-300 origin-left ${
+                    isMenuOpen ? "-rotate-45" : ""
+                  }`}
+                />
+              </div>
+            </button>
+          </div>
+
+          {/* MOBILE NAV DROPDOWN */}
+          <div
+            className={`absolute left-0 right-0 top-full mt-3 px-2 transition-all duration-300 ease-out lg:hidden ${
+              isMenuOpen
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 -translate-y-4 pointer-events-none"
+            }`}
+          >
+            <nav className="flex flex-col overflow-hidden rounded-2xl bg-white/95 backdrop-blur-2xl p-2 shadow-2xl border border-white/40">
+              {navItems.map((item, idx) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  style={{ transitionDelay: `${idx * 50}ms` }}
+                  className={`p-4 text-[#df4473] font-bold hover:bg-pink-50 rounded-xl transition-all duration-200 transform ${
+                    isMenuOpen ? "translate-x-0" : "-translate-x-4"
                   }`}
                 >
                   {item.label}
@@ -342,222 +381,25 @@ export default function RegisterPage() {
           </div>
         </header>
 
-        <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
-          <div className="flex min-h-0 flex-col rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6 animate-slide-up [animation-delay:100ms]">
-            <div className="shrink-0">
-              <h2 className="text-xl font-extrabold text-white md:text-2xl">
-                Registered Tracking Numbers
-              </h2>
+        {/* CONTENT SECTION */}
+        <section className="relative z-0 flex flex-col lg:grid lg:grid-cols-[1.6fr_1fr] flex-1 gap-4 min-h-0">
 
-              <p className="mt-3 max-w-[650px] text-xs leading-relaxed text-white sm:text-sm">
-                All expected parcels are listed here. Register your tracking
-                number, and it will appear in the list with Pending Status.
-              </p>
+          {/* REGISTER FORM */}
+          <div className="order-1 lg:order-2 flex flex-col shrink-0 rounded-[2.5rem] bg-black/5 backdrop-blur-md border border-white/20 p-8 shadow-inner h-fit transition-all duration-500 hover:bg-black/10">
+            <h2 className="text-xs font-black text-white/80 uppercase tracking-[0.3em] mb-6">
+              Register New
+            </h2>
 
-              {error && (
-                <div className="mt-3 rounded-xl bg-red-400/50 p-3 text-sm text-white animate-shake">
-                  {error}
-                  <button
-                    onClick={fetchParcels}
-                    className="ml-2 inline-flex items-center gap-1 text-xs underline hover:no-underline transition-opacity hover:opacity-80"
-                  >
-                    Retry
-                  </button>
-                </div>
-              )}
-
-              <div className="mt-4 flex flex-wrap gap-2 rounded-[1.5rem] bg-white/35 p-2">
-                {filterTabs.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    onClick={() => setActiveFilter(tab)}
-                    className={`min-w-[110px] flex-1 rounded-full px-3 py-2 text-xs font-bold transition-all duration-300 cubic-bezier(0.16, 1, 0.3, 1) transform active:scale-95 ${
-                      activeFilter === tab
-                        ? "bg-[#de9aae] text-white shadow-md scale-102"
-                        : "text-[#de9aae] hover:bg-white/30"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#de9aae] [&::-webkit-scrollbar-track]:bg-transparent [scrollbar-color:#de9aae_transparent] [scrollbar-width:thin]">
-              <div className="flex flex-col gap-3">
-                {dataLoading ? (
-                  <div className="flex min-h-full flex-col items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center animate-fade-in">
-                    <div className="animate-spin h-8 w-8 border-2 border-[#de9aae]/50 border-t-[#de9aae] rounded-full mx-auto mb-4"></div>
-                    <p className="text-white">Loading parcels...</p>
-                  </div>
-                ) : filteredParcels.length === 0 ? (
-                  <div className="flex min-h-full items-center justify-center rounded-[1.5rem] bg-white/30 py-10 text-center animate-fade-in">
-                    <div>
-                      <p className="text-lg font-bold text-[#de9aae] md:text-xl">
-                        No parcels{" "}
-                        {activeFilter !== "All"
-                          ? `with ${activeFilter.toLowerCase()} status`
-                          : ""}{" "}
-                        found
-                      </p>
-                      <p className="mt-2 text-sm text-[#dd9db0]">
-                        Register your first tracking number above
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  filteredParcels.map((parcel, idx) => {
-                    const statusStyle =
-                      statusColors[
-                        parcel.status as keyof typeof statusColors
-                      ] || {
-                        bg: "bg-gray-400",
-                        text: "text-gray-800",
-                      };
-
-                    const isEditing = editingId === parcel._id;
-
-                    return (
-                      <div
-                        key={parcel._id}
-                        style={{ animationDelay: `${idx * 40}ms` }}
-                        className="flex flex-col gap-4 rounded-[1.5rem] bg-white/45 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between transition-all duration-300 ease-out hover:bg-white/60 hover:shadow-sm hover:-translate-y-0.5 animate-slide-up"
-                      >
-                        <div className="min-w-0 flex-1">
-                          {isEditing ? (
-                            <div className="animate-fade-in">
-                              <input
-                                type="text"
-                                value={editTrackingNumber}
-                                onChange={(e) =>
-                                  setEditTrackingNumber(e.target.value)
-                                }
-                                className="w-full bg-white/50 px-2 py-1 rounded-md text-lg font-extrabold text-[#de9aae] outline-none border border-[#de9aae]/20 focus:border-[#de9aae] transition-colors sm:text-xl md:text-2xl"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter")
-                                    handleUpdate(parcel._id);
-                                  if (e.key === "Escape") cancelEdit();
-                                }}
-                              />
-                              <div className="mt-1 text-xs text-[#de9aae] sm:text-sm md:text-base">
-                                {editParcelName !== "Parcel" && (
-                                  <input
-                                    type="text"
-                                    value={editParcelName}
-                                    onChange={(e) =>
-                                      setEditParcelName(e.target.value)
-                                    }
-                                    className="block w-full bg-white/50 px-2 py-0.5 rounded-md mt-1 font-medium outline-none border border-[#de9aae]/10 focus:border-[#de9aae] transition-colors"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter")
-                                        handleUpdate(parcel._id);
-                                      if (e.key === "Escape") cancelEdit();
-                                    }}
-                                  />
-                                )}
-                                <span className="inline-block mt-2">{formatDate(parcel.createdAt)}</span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="animate-fade-in">
-                              <h3 className="break-all text-lg font-extrabold text-[#de9aae] sm:text-xl md:text-2xl">
-                                {parcel.trackingNumber}
-                              </h3>
-                              <div className="mt-1 text-xs text-[#de9aae] sm:text-sm md:text-base">
-                                {parcel.parcelName !== "Parcel" && (
-                                  <span className="block font-medium">
-                                    {parcel.parcelName}
-                                  </span>
-                                )}
-                                <div
-                                  className="font-medium leading-relaxed"
-                                  dangerouslySetInnerHTML={{
-                                    __html: formatFullDateInfo(parcel),
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 lg:ml-4 lg:flex-nowrap">
-                          <span
-                            className={`rounded-full px-4 py-2 text-xs font-extrabold transition-all duration-300 sm:text-sm md:px-5 md:text-base hover:brightness-95 ${statusStyle.bg} ${statusStyle.text}`}
-                          >
-                            {getStatusDisplay(parcel.status)}
-                          </span>
-
-                          <div className="flex items-center gap-3">
-                            {isEditing ? (
-                              <>
-                                <button
-                                  type="button"
-                                  className="text-lg text-green-600 transition-all transform hover:scale-125 hover:opacity-100 active:scale-95 md:text-xl"
-                                  aria-label="Save changes"
-                                  onClick={() => handleUpdate(parcel._id)}
-                                >
-                                  ✓
-                                </button>
-                                <button
-                                  type="button"
-                                  className="text-lg text-red-500 transition-all transform hover:scale-125 hover:opacity-100 active:scale-95 md:text-xl"
-                                  aria-label="Cancel edit"
-                                  onClick={cancelEdit}
-                                >
-                                  ✕
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                <button
-                                  type="button"
-                                  className="text-lg text-[#de9aae] opacity-80 transition-all transform hover:scale-125 hover:opacity-100 hover:text-[#df4473] active:scale-95 md:text-xl"
-                                  aria-label={`Edit ${parcel.trackingNumber}`}
-                                  onClick={() => startEdit(parcel)}
-                                >
-                                  ✎
-                                </button>
-                                <button
-                                  type="button"
-                                  className="text-lg text-[#de9aae] opacity-80 transition-all transform hover:scale-125 hover:opacity-100 hover:text-red-500 active:scale-95 md:text-xl"
-                                  aria-label={`Delete ${parcel.trackingNumber}`}
-                                  onClick={() =>
-                                    handleDelete(parcel._id, parcel.trackingNumber)
-                                  }
-                                >
-                                  🗑
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex min-h-0 flex-col rounded-[2rem] bg-white/25 p-4 backdrop-blur-sm sm:p-5 md:p-6 animate-slide-up [animation-delay:200ms]">
-            <div className="shrink-0">
-              <h2 className="text-xl font-extrabold text-white md:text-2xl">
-                Register Tracking Number
-              </h2>
-            </div>
-
-            <form className="mt-6 space-y-4" onSubmit={handleRegister}>
-              <div className="transition-all duration-300 focus-within:translate-x-1">
-                <label className="mb-2 block text-base font-medium text-white md:text-lg">
-                  Tracking number *
+            <form className="space-y-4" onSubmit={handleRegister}>
+              <div>
+                <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
+                  Tracking Number
                 </label>
                 <input
                   id="trackingNumber"
                   type="text"
-                  placeholder="Enter your parcel's tracking number"
-                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0]/70 focus:ring-2 focus:ring-white/50 focus:bg-white/60 transition-all duration-300 md:h-14 md:text-base"
+                  placeholder="Enter number..."
+                  className="w-full h-14 rounded-3xl bg-white/20 border border-white/30 px-6 text-white placeholder:text-white/30 outline-none focus:bg-white/30 focus:scale-[1.01] transition-all duration-300"
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
                   disabled={loading}
@@ -566,15 +408,15 @@ export default function RegisterPage() {
                 />
               </div>
 
-              <div className="transition-all duration-300 focus-within:translate-x-1">
-                <label className="mb-2 block text-base font-medium text-white md:text-lg">
-                  Parcel name (optional)
+              <div>
+                <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
+                  Parcel Name (Optional)
                 </label>
                 <input
                   id="parcelName"
                   type="text"
-                  placeholder="e.g., Birthday Gift, Documents"
-                  className="h-12 w-full rounded-full bg-white/45 px-5 text-sm text-[#dd8ea5] outline-none placeholder:text-[#dd9db0]/70 focus:ring-2 focus:ring-white/50 focus:bg-white/60 transition-all duration-300 md:h-14 md:text-base"
+                  placeholder="e.g. Birthday Gift"
+                  className="w-full h-14 rounded-3xl bg-white/20 border border-white/30 px-6 text-white placeholder:text-white/30 outline-none focus:bg-white/30 focus:scale-[1.01] transition-all duration-300"
                   value={parcelName}
                   onChange={(e) => setParcelName(e.target.value)}
                   disabled={loading}
@@ -585,18 +427,187 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading || !trackingNumber.trim()}
-                className="h-12 w-full rounded-full bg-[#df4473] px-6 text-base font-extrabold text-white shadow-md transition-all duration-300 transform cubic-bezier(0.16, 1, 0.3, 1) hover:scale-[1.02] hover:brightness-105 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none md:h-14 md:text-xl"
+                className="w-full h-14 mt-4 rounded-3xl bg-[#df4473] text-white font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <span className="animate-spin h-5 w-5 border-2 border-white/50 border-t-white rounded-full"></span>
-                    Registering...
-                  </span>
-                ) : (
-                  "Register"
-                )}
+                {loading ? "Processing..." : "Register"}
               </button>
+
+              {error && (
+                <div className="rounded-2xl bg-red-400/40 border border-red-300/20 p-4 text-sm text-white">
+                  {error}
+                </div>
+              )}
             </form>
+          </div>
+
+          {/* LIST CONTAINER */}
+          <div className="order-2 lg:order-1 flex flex-col rounded-[2.5rem] bg-black/5 backdrop-blur-md border border-white/20 p-6 shadow-inner flex-1 min-h-0 transition-all duration-500 overflow-hidden">
+            <div className="shrink-0">
+              <h2 className="text-xs font-black text-white/80 uppercase tracking-[0.3em] mb-4">
+                Registered Tracking Numbers
+              </h2>
+
+              <div className="grid grid-cols-4 gap-1 rounded-2xl bg-white/10 p-1 border border-white/10">
+                {filterTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    onClick={() => setActiveFilter(tab)}
+                    className={`rounded-xl py-2 text-[10px] xs:text-xs font-bold transition-all duration-300 text-center ${
+                      activeFilter === tab
+                        ? "bg-white/15 text-white shadow-md scale-105"
+                        : "text-white hover:bg-white/10"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div
+              className={`mt-6 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full`}
+            >
+              <div className="flex flex-col gap-3">
+                {dataLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-white/40">
+                    <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-white mb-4" />
+                    <p className="text-sm font-bold uppercase tracking-widest">
+                      Loading parcels...
+                    </p>
+                  </div>
+                ) : filteredParcels.length > 0 ? (
+                  filteredParcels.map((parcel) => {
+                    const statusStyle =
+                      statusColors[
+                        parcel.status as keyof typeof statusColors
+                      ] || {
+                        bg: "bg-gray-300",
+                        text: "text-gray-800",
+                      };
+
+                    const isEditing = editingId === parcel._id;
+
+                    return (
+                      <div
+                        key={parcel._id}
+                        className="group flex flex-col sm:flex-row sm:items-center gap-4 rounded-3xl bg-white/15 p-5 border border-white/10 hover:bg-white/25 hover:scale-[1.01] transition-all duration-300"
+                      >
+                        <div className="flex-1 min-w-0">
+                          {isEditing ? (
+                            <div className="space-y-2">
+                              <input
+                                type="text"
+                                value={editTrackingNumber}
+                                onChange={(e) =>
+                                  setEditTrackingNumber(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter")
+                                    handleUpdate(parcel._id);
+                                  if (e.key === "Escape") cancelEdit();
+                                }}
+                                className="w-full rounded-2xl bg-white/20 border border-white/30 px-4 py-2 text-lg font-bold text-white outline-none focus:bg-white/30"
+                                autoFocus
+                              />
+                              <input
+                                type="text"
+                                value={editParcelName}
+                                onChange={(e) =>
+                                  setEditParcelName(e.target.value)
+                                }
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter")
+                                    handleUpdate(parcel._id);
+                                  if (e.key === "Escape") cancelEdit();
+                                }}
+                                className="w-full rounded-2xl bg-white/20 border border-white/30 px-4 py-2 text-sm text-white outline-none focus:bg-white/30"
+                                placeholder="Parcel name"
+                              />
+                            </div>
+                          ) : (
+                            <>
+                              <h3 className="text-lg font-bold text-white break-all">
+                                {parcel.trackingNumber}
+                              </h3>
+                              <p className="text-xs font-medium text-white/60 uppercase tracking-wider">
+                                {parcel.parcelName}
+                              </p>
+                              <p className="mt-1 text-[11px] text-white/40">
+                                Created: {formatDate(parcel.createdAt)}
+                                {" • "}Delivered: {formatDate(parcel.deliveryDate)}
+                                {" • "}Retrieved: {formatDate(parcel.retrievedDate)}
+                              </p>
+                            </>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between sm:justify-end gap-4">
+                          <span
+                            className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm ${statusStyle.bg} ${statusStyle.text}`}
+                          >
+                            {getStatusDisplay(parcel.status)}
+                          </span>
+
+                          <div className="flex items-center gap-3">
+                            {isEditing ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdate(parcel._id)}
+                                  className="text-lg text-green-300 hover:text-green-200 hover:scale-125 transition-all"
+                                  aria-label="Save changes"
+                                >
+                                  ✓
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEdit}
+                                  className="text-lg text-red-300 hover:text-red-200 hover:scale-125 transition-all"
+                                  aria-label="Cancel edit"
+                                >
+                                  ✕
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => startEdit(parcel)}
+                                  className="text-lg text-white/60 hover:text-white hover:scale-125 transition-all"
+                                  aria-label={`Edit ${parcel.trackingNumber}`}
+                                >
+                                  ✎
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    handleDelete(
+                                      parcel._id,
+                                      parcel.trackingNumber
+                                    )
+                                  }
+                                  className="text-lg text-white/60 hover:text-red-300 hover:scale-125 transition-all"
+                                  aria-label={`Delete ${parcel.trackingNumber}`}
+                                >
+                                  🗑
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-white/20">
+                    <p className="text-sm font-bold uppercase tracking-widest">
+                      No parcels found
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </section>
       </div>

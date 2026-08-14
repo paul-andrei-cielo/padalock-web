@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "PadaLock | Home",
+  title: "Home | Padalock",
 };
 
 import Home from "./Home";
