@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PadaLock</string>
+    <string name="title_activity_main">PadaLock</string>
+    <string name="package_name">com.padalock.app</string>
+    <string name="custom_url_scheme">com.padalock.app</string>
+</resources>
