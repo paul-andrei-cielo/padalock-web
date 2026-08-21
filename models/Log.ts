@@ -1,5 +1,4 @@
-  import mongoose, { models, mongo } from "mongoose";
-  
+import mongoose, { models } from "mongoose";  
 
   const LogSchema = new mongoose.Schema({
     userId: {
@@ -27,9 +26,8 @@
     'LOCK_OPEN',
     'LOCK_CLOSED',
     'DELIVERY_VALID',
-    'RETRIEVE',
-    'LID_OPEN_TOO_LONG',
     'DELIVERY_SUCCESS',
+    'RETRIEVE',
   ],
     required: true
   },

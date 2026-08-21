@@ -4,19 +4,32 @@ import { connectDB } from '@/lib/mongodb';
 import Log from '@/models/Log';
 import { getUserFromRequest } from '@/lib/auth';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
 
     const user = getUserFromRequest(request);
 
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const userId = new mongoose.Types.ObjectId(
       user.id || user.userId
     );
 
+    console.log("Fetching logs for:", userId);
+
     const logs = await Log.find({ userId })
       .sort({ createdAt: -1 })
-      .limit(50);
+      .limit(50)
+      .lean();
 
     console.log("Fetched logs:", logs.length);
 

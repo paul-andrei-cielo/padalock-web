@@ -13,15 +13,7 @@ export async function GET(req: NextRequest) {
             userId: user.userId
         }).lean();
 
-        const cleanedParcels = parcels.map((parcel: any) => ({
-            ...parcel,
-            status:
-                parcel.status === "VERIFIED"
-                    ? "PENDING"
-                    : parcel.status
-        }));
-
-        return NextResponse.json(cleanedParcels);
+        return NextResponse.json(parcels);
 
     } catch (error) {
 
