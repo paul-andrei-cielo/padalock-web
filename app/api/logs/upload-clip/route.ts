@@ -75,41 +75,73 @@ export async function POST(req: NextRequest) {
     // DELIVERY
 
     if (eventType === "DELIVERY") {
-      if (trackingNumber) {
-        await Parcel.findOneAndUpdate(
+      const trackingNumbers =
+        trackingNumber
+          ?.split(",")
+          .map((number) => number.trim())
+          .filter(Boolean) || [];
+
+      console.log(
+        "DELIVERY TRACKING NUMBERS:",
+        trackingNumbers
+      );
+
+      // Save the SAME surveillance clip
+      // to every parcel in this delivery transaction
+      if (trackingNumbers.length > 0) {
+        const parcelUpdate = await Parcel.updateMany(
           {
-            trackingNumber,
+            trackingNumber: {
+              $in: trackingNumbers,
+            },
             userId: locker.userId,
           },
           {
-            videoUrl: playbackUrl,
-          },
-          {
-            new: true,
+            $set: {
+              videoUrl: playbackUrl,
+            },
           }
+        );
+
+        console.log(
+          "DELIVERY PARCEL VIDEO UPDATE:",
+          parcelUpdate
         );
       }
 
-      const updatedDeliveryLog = await Log.findOneAndUpdate(
-        {
-          lockerId: locker._id,
-          userId: locker.userId,
-          action: {
-            $in: ["DELIVERY_SUCCESS", "DELIVERY_VALID"],
-          },
-        },
-        {
-          cameraRecording: playbackUrl,
-        },
-        {
-          sort: { createdAt: -1 },
-          new: true,
-        }
-      );
-      console.log(
-      "DELIVERY CLIP LOG UPDATE:",
-      updatedDeliveryLog
-    );
+      // Attach the same recording to the matching
+      // DELIVERY_SUCCESS logs if they already exist
+      for (const number of trackingNumbers) {
+        const updatedDeliveryLog =
+          await Log.findOneAndUpdate(
+            {
+              lockerId: locker._id,
+              userId: locker.userId,
+              action: {
+                $in: [
+                  "DELIVERY_SUCCESS",
+                  "DELIVERY_VALID",
+                ],
+              },
+              details: {
+                $regex: number,
+                $options: "i",
+              },
+            },
+            {
+              cameraRecording: playbackUrl,
+            },
+            {
+              sort: { createdAt: -1 },
+              new: true,
+            }
+          );
+
+        console.log(
+          `DELIVERY LOG UPDATE ${number}:`,
+          updatedDeliveryLog
+        );
+      }
     }
 
     // RETRIEVAL
