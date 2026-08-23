@@ -235,6 +235,9 @@ export default function ActivityPage() {
           ? logs.find(
               (log) =>
                 log.action === "RETRIEVE" &&
+                log.details?.includes(
+                  parcel.trackingNumber
+                ) &&
                 log.cameraRecording
             )
           : undefined;

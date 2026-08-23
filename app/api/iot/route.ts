@@ -185,18 +185,66 @@ export async function POST(req: NextRequest) {
 }
 
         if (action === "RETRIEVE" || action === "PARCEL_REMOVED") {
-            const locker = await Locker.findOne({ code: lockerCode });
-            if (!locker) return NextResponse.json({ error: "Locker not found" }, { status: 404 });
-            await Parcel.updateMany({ userId: locker.userId, status: "DELIVERED" }, { $set: { status: "RETRIEVED", retrievedDate: new Date() } });
+            const locker = await Locker.findOne({
+                code: lockerCode
+            });
+
+            if (!locker) {
+                return NextResponse.json(
+                    { error: "Locker not found" },
+                    { status: 404 }
+                );
+            }
+
+            // Find exactly which delivered parcels
+            // are being retrieved in THIS transaction
+            const deliveredParcels = await Parcel.find({
+                userId: locker.userId,
+                status: "DELIVERED"
+            });
+
+            const trackingNumbers =
+                deliveredParcels.map(
+                    (parcel) => parcel.trackingNumber
+                );
+
+            const retrievedDate = new Date();
+
+            // Mark those parcels as retrieved
+            await Parcel.updateMany(
+                {
+                    _id: {
+                        $in: deliveredParcels.map(
+                            (parcel) => parcel._id
+                        )
+                    }
+                },
+                {
+                    $set: {
+                        status: "RETRIEVED",
+                        retrievedDate
+                    }
+                }
+            );
+
+            // IMPORTANT:
+            // Save the exact tracking numbers in the log
             await Log.create({
                 userId: locker.userId,
                 lockerId: locker._id,
                 actor: "user",
                 action: "RETRIEVE",
                 success: true,
-                details: "Parcel retrieved"
+                details:
+                    trackingNumbers.length > 0
+                        ? `Parcels retrieved: ${trackingNumbers.join(",")}`
+                        : "No delivered parcels found during retrieval"
             });
-            return NextResponse.json({ ok: true });
+
+            return NextResponse.json({
+                ok: true,
+                trackingNumbers
+            });
         }
 
         return NextResponse.json({ mode: "INVALID" });
