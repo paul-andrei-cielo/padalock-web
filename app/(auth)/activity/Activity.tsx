@@ -263,7 +263,9 @@ export default function ActivityPage() {
       case "PIN_RESET": return "Lockout Reset";
       case "LOCK_OPEN": return "Locker Opened";
       case "LOCK_CLOSED": return "Locker Closed";
-      case "DELIVERY_VALID": return "Parcel Delivered";
+      case "DELIVERY_VALID":
+      case "DELIVERY_SUCCESS":
+        return "Parcel Delivered";
       case "RETRIEVE": return "Parcel Retrieved";
       case "LID_OPEN_TOO_LONG": return "Locker Left Open";
       default: return null;
