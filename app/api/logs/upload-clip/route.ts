@@ -86,8 +86,6 @@ export async function POST(req: NextRequest) {
         trackingNumbers
       );
 
-      // Save the SAME surveillance clip
-      // to every parcel in this delivery transaction
       if (trackingNumbers.length > 0) {
         const parcelUpdate = await Parcel.updateMany(
           {
@@ -109,8 +107,6 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Attach the same recording to the matching
-      // DELIVERY_SUCCESS logs if they already exist
       for (const number of trackingNumbers) {
         const updatedDeliveryLog =
           await Log.findOneAndUpdate(

@@ -26,9 +26,7 @@ export async function POST(req: NextRequest) {
 
     const inputCode = String(code).trim();
 
-    // ==========================================
     // OWNER PIN VERIFICATION
-    // ==========================================
     if (verifyType === "OWNER") {
 
         if (locker.isLockedOut || !locker.pin) {
@@ -89,9 +87,8 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    // ==========================================
     // DELIVERY TRACKING VERIFICATION
-    // ==========================================
+
     if (verifyType === "DELIVERY") {
 
         const parcel = await Parcel.findOne({
@@ -196,8 +193,6 @@ export async function POST(req: NextRequest) {
                 );
             }
 
-            // Find exactly which delivered parcels
-            // are being retrieved in THIS transaction
             const deliveredParcels = await Parcel.find({
                 userId: locker.userId,
                 status: "DELIVERED"
@@ -210,7 +205,6 @@ export async function POST(req: NextRequest) {
 
             const retrievedDate = new Date();
 
-            // Mark those parcels as retrieved
             await Parcel.updateMany(
                 {
                     _id: {
@@ -227,8 +221,6 @@ export async function POST(req: NextRequest) {
                 }
             );
 
-            // IMPORTANT:
-            // Save the exact tracking numbers in the log
             await Log.create({
                 userId: locker.userId,
                 lockerId: locker._id,
