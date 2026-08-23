@@ -1,7 +1,9 @@
 import { connectDB } from "@/lib/mongodb";
 import Return from "@/models/Return";
+import Locker from "@/models/Locker";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
+
 
 export async function GET(req: NextRequest) {
     try {
@@ -31,7 +33,19 @@ export async function POST(req: NextRequest) {
 
         const user = getUserFromRequest(req);
 
-        if (!user.lockerId) {
+        if (!user?.userId) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        // Find the locker actually assigned to this user
+        const locker = await Locker.findOne({
+            userId: user.userId
+        });
+
+        if (!locker) {
             return NextResponse.json(
                 { error: "No locker assigned to your account" },
                 { status: 400 }
@@ -42,14 +56,18 @@ export async function POST(req: NextRequest) {
 
         const returnDoc = await Return.create({
             userId: user.userId,
-            lockerId: user.lockerId,
-            itemDescription: itemDescription || "Parcel",
+            lockerId: locker._id,
+            itemDescription: itemDescription?.trim() || "Parcel",
             status: "PENDING"
         });
 
         return NextResponse.json(returnDoc);
     } catch (error) {
-        console.error(error);
-        return NextResponse.json({ error: "Failed to create return" }, { status: 500 });
+        console.error("Create return error:", error);
+
+        return NextResponse.json(
+            { error: "Failed to create return" },
+            { status: 500 }
+        );
     }
 }
