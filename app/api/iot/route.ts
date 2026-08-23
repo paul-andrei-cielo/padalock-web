@@ -158,18 +158,8 @@ export async function POST(req: NextRequest) {
                 });
             }
 
-            returnDoc.status = "PICKED_UP";
-            returnDoc.pickedUpDate = new Date();
+            returnDoc.status = "PICKUP_ACTIVE";
             await returnDoc.save();
-
-            await Log.create({
-                userId: locker.userId,
-                lockerId: locker._id,
-                actor: "courier",
-                action: "RETURN_PICKUP_SUCCESS",
-                success: true,
-                details: `Return ${returnDoc._id} picked up`
-            });
 
             return NextResponse.json({
                 mode: "RETURN_PICKUP"
@@ -292,6 +282,56 @@ export async function POST(req: NextRequest) {
                 trackingNumbers
             });
         }
+
+
+        // ==========================================
+        // RETURN PHYSICAL PICKUP CONFIRMATION
+        // ==========================================
+        if (action === "RETURN_PICKED_UP") {
+
+            const locker = await Locker.findOne({
+                code: lockerCode
+            });
+
+            if (!locker) {
+                return NextResponse.json(
+                    { error: "Locker not found" },
+                    { status: 404 }
+                );
+            }
+
+            const returnDoc = await Return.findOne({
+                lockerId: locker._id,
+                status: "PICKUP_ACTIVE"
+            }).sort({ updatedAt: -1 });
+
+            if (!returnDoc) {
+                return NextResponse.json(
+                    { error: "No active return pickup" },
+                    { status: 404 }
+                );
+            }
+
+            returnDoc.status = "PICKED_UP";
+            returnDoc.pickedUpDate = new Date();
+
+            await returnDoc.save();
+
+            await Log.create({
+                userId: locker.userId,
+                lockerId: locker._id,
+                actor: "courier",
+                action: "RETURN_PICKUP_SUCCESS",
+                success: true,
+                details: `Return ${returnDoc._id} picked up`
+            });
+
+            return NextResponse.json({
+                ok: true,
+                returnId: returnDoc._id
+            });
+        }
+
 
         return NextResponse.json({ mode: "INVALID" });
 
