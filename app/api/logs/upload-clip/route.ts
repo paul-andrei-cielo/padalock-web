@@ -66,38 +66,78 @@ export async function POST(req: NextRequest) {
       }
     );
 
+    const playbackUrl = cloudinary.url(result.public_id, {
+      resource_type: "video",
+      format: "mp4",
+      secure: true,
+    });
+
     // DELIVERY
-    
+
     if (eventType === "DELIVERY") {
-      if (trackingNumber) {
-        await Parcel.findOneAndUpdate(
+      const trackingNumbers =
+        trackingNumber
+          ?.split(",")
+          .map((number) => number.trim())
+          .filter(Boolean) || [];
+
+      console.log(
+        "DELIVERY TRACKING NUMBERS:",
+        trackingNumbers
+      );
+
+      if (trackingNumbers.length > 0) {
+        const parcelUpdate = await Parcel.updateMany(
           {
-            trackingNumber,
+            trackingNumber: {
+              $in: trackingNumbers,
+            },
             userId: locker.userId,
           },
           {
-            videoUrl: result.secure_url,
-          },
-          {
-            new: true,
+            $set: {
+              videoUrl: playbackUrl,
+            },
           }
+        );
+
+        console.log(
+          "DELIVERY PARCEL VIDEO UPDATE:",
+          parcelUpdate
         );
       }
 
-      await Log.findOneAndUpdate(
-        {
-          lockerId: locker._id,
-          userId: locker.userId,
-          action: "DELIVERY_SUCCESS",
-        },
-        {
-          cameraRecording: result.secure_url,
-        },
-        {
-          sort: { createdAt: -1 },
-          new: true,
-        }
-      );
+      for (const number of trackingNumbers) {
+        const updatedDeliveryLog =
+          await Log.findOneAndUpdate(
+            {
+              lockerId: locker._id,
+              userId: locker.userId,
+              action: {
+                $in: [
+                  "DELIVERY_SUCCESS",
+                  "DELIVERY_VALID",
+                ],
+              },
+              details: {
+                $regex: number,
+                $options: "i",
+              },
+            },
+            {
+              cameraRecording: playbackUrl,
+            },
+            {
+              sort: { createdAt: -1 },
+              new: true,
+            }
+          );
+
+        console.log(
+          `DELIVERY LOG UPDATE ${number}:`,
+          updatedDeliveryLog
+        );
+      }
     }
 
     // RETRIEVAL
@@ -109,8 +149,9 @@ export async function POST(req: NextRequest) {
           userId: locker.userId,
           action: "RETRIEVE",
         },
+        
         {
-          cameraRecording: result.secure_url,
+          cameraRecording: playbackUrl,
         },
         {
           sort: { createdAt: -1 },
@@ -121,7 +162,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       message: "Clip uploaded successfully",
-      videoUrl: result.secure_url,
+      videoUrl: playbackUrl,
       eventType,
     });
   } catch (error) {

@@ -17,6 +17,7 @@ interface Parcel {
   updatedAt: string;
   deliveryDate?: string;
   retrievedDate?: string;
+  videoUrl?: string;
 }
 
 interface Log {
@@ -45,8 +46,10 @@ interface ActivityItem {
   status: ParcelStatus;
   date: string;
   time: string;
-  hasClip: boolean;
-  clipUrl?: string;
+  hasDeliveryClip: boolean;
+  deliveryClipUrl?: string;
+  hasRetrievalClip: boolean;
+  retrievalClipUrl?: string;
   parcelName?: string;
 }
 
@@ -211,14 +214,39 @@ export default function ActivityPage() {
   const activities: ActivityItem[] = useMemo(() => {
     return parcels.map((parcel) => {
       let activityDate = parcel.createdAt;
-      const status = parcel.status as ParcelStatus;
+      const status: ParcelStatus =
+        parcel.status === "DELIVERED"
+          ? "DELIVERED"
+          : parcel.status === "RETRIEVED"
+          ? "RETRIEVED"
+          : "PENDING";
 
       if (status === "DELIVERED" && parcel.deliveryDate) activityDate = parcel.deliveryDate;
       else if (status === "RETRIEVED" && parcel.retrievedDate) activityDate = parcel.retrievedDate;
 
-      const relatedLog = logs.find(
-        (log) => log.details?.includes(parcel.trackingNumber) && log.cameraRecording
+      const deliveryLog = logs.find(
+        (log) =>
+          (log.action === "DELIVERY_SUCCESS" ||
+            log.action === "DELIVERY_VALID") &&
+          log.details?.includes(parcel.trackingNumber) &&
+          log.cameraRecording
       );
+
+      const deliveryClipUrl =
+        parcel.videoUrl ||
+        deliveryLog?.cameraRecording;
+
+      const retrievalLog =
+        parcel.status === "RETRIEVED"
+          ? logs.find(
+              (log) =>
+                log.action === "RETRIEVE" &&
+                log.details?.includes(
+                  parcel.trackingNumber
+                ) &&
+                log.cameraRecording
+            )
+          : undefined;
 
       return {
         id: parcel._id,
@@ -226,8 +254,11 @@ export default function ActivityPage() {
         status,
         date: formatDate(activityDate),
         time: formatTime(activityDate),
-        hasClip: !!relatedLog,
-        clipUrl: relatedLog?.cameraRecording,
+        hasDeliveryClip: !!deliveryClipUrl,
+        deliveryClipUrl,
+
+        hasRetrievalClip: !!retrievalLog,
+        retrievalClipUrl: retrievalLog?.cameraRecording,
         parcelName: parcel.parcelName !== "Parcel" ? parcel.parcelName : undefined,
       };
     });
@@ -246,7 +277,9 @@ export default function ActivityPage() {
       case "PIN_RESET": return "Lockout Reset";
       case "LOCK_OPEN": return "Locker Opened";
       case "LOCK_CLOSED": return "Locker Closed";
-      case "DELIVERY_VALID": return "Parcel Delivered";
+      case "DELIVERY_VALID":
+      case "DELIVERY_SUCCESS":
+        return "Parcel Delivered";
       case "RETRIEVE": return "Parcel Retrieved";
       case "LID_OPEN_TOO_LONG": return "Locker Left Open";
       default: return null;
@@ -515,15 +548,27 @@ export default function ActivityPage() {
                               {statusStyles[item.status].label}
                             </span>
 
-                            {item.hasClip && item.clipUrl && (
-                              <button
-                                onClick={() => setSelectedClip(item.clipUrl!)}
-                                className="bg-white/10 hover:bg-white text-white hover:text-[#df4473] p-2.5 rounded-xl transition-all duration-300 hover:rotate-6 active:scale-90"
-                                title="View Security Recording"
-                              >
-                                📹
-                              </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {item.hasDeliveryClip && item.deliveryClipUrl && (
+                                <button
+                                  onClick={() => setSelectedClip(item.deliveryClipUrl!)}
+                                  className="bg-white/10 hover:bg-white text-white hover:text-[#df4473] px-3 py-2 rounded-xl transition-all duration-300 active:scale-90"
+                                  title="View Delivery Recording"
+                                >
+                                  📦📹
+                                </button>
+                              )}
+
+                              {item.hasRetrievalClip && item.retrievalClipUrl && (
+                                <button
+                                  onClick={() => setSelectedClip(item.retrievalClipUrl!)}
+                                  className="bg-white/10 hover:bg-white text-white hover:text-[#df4473] px-3 py-2 rounded-xl transition-all duration-300 active:scale-90"
+                                  title="View Retrieval Recording"
+                                >
+                                  🔓📹
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}

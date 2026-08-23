@@ -27,9 +27,7 @@ export async function POST(req: NextRequest) {
 
     const inputCode = String(code).trim();
 
-    // ==========================================
     // OWNER PIN VERIFICATION
-    // ==========================================
     if (verifyType === "OWNER") {
 
         if (locker.isLockedOut || !locker.pin) {
@@ -90,9 +88,8 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    // ==========================================
     // DELIVERY TRACKING VERIFICATION
-    // ==========================================
+
     if (verifyType === "DELIVERY") {
 
         const parcel = await Parcel.findOne({
@@ -239,18 +236,61 @@ export async function POST(req: NextRequest) {
 }
 
         if (action === "RETRIEVE" || action === "PARCEL_REMOVED") {
-            const locker = await Locker.findOne({ code: lockerCode });
-            if (!locker) return NextResponse.json({ error: "Locker not found" }, { status: 404 });
-            await Parcel.updateMany({ userId: locker.userId, status: "DELIVERED" }, { $set: { status: "RETRIEVED", retrievedDate: new Date() } });
+            const locker = await Locker.findOne({
+                code: lockerCode
+            });
+
+            if (!locker) {
+                return NextResponse.json(
+                    { error: "Locker not found" },
+                    { status: 404 }
+                );
+            }
+
+            const deliveredParcels = await Parcel.find({
+                userId: locker.userId,
+                status: "DELIVERED"
+            });
+
+            const trackingNumbers =
+                deliveredParcels.map(
+                    (parcel) => parcel.trackingNumber
+                );
+
+            const retrievedDate = new Date();
+
+            await Parcel.updateMany(
+                {
+                    _id: {
+                        $in: deliveredParcels.map(
+                            (parcel) => parcel._id
+                        )
+                    }
+                },
+                {
+                    $set: {
+                        status: "RETRIEVED",
+                        retrievedDate
+                    }
+                }
+            );
+
             await Log.create({
                 userId: locker.userId,
                 lockerId: locker._id,
                 actor: "user",
                 action: "RETRIEVE",
                 success: true,
-                details: "Parcel retrieved"
+                details:
+                    trackingNumbers.length > 0
+                        ? `Parcels retrieved: ${trackingNumbers.join(",")}`
+                        : "No delivered parcels found during retrieval"
             });
-            return NextResponse.json({ ok: true });
+
+            return NextResponse.json({
+                ok: true,
+                trackingNumbers
+            });
         }
 
         return NextResponse.json({ mode: "INVALID" });
