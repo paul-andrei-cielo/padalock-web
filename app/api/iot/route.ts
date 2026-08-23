@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import Parcel from "@/models/Parcel";
 import Locker from "@/models/Locker";
 import Log from "@/models/Log";
+import Return from "@/models/Return";
 import mongoose from "mongoose";
 
 export async function POST(req: NextRequest) {
@@ -10,74 +11,185 @@ export async function POST(req: NextRequest) {
         await connectDB();
         const body = await req.json();
         
-        let { code, lockerCode, action, status } = body;
+        let { code, lockerCode, action, status, verifyType } = body;
         if (!action && status) action = status; 
         if (!action && code) action = "VERIFY"; 
 
-        if (action === "VERIFY") {
-            const locker = await Locker.findOne({ code: lockerCode });
-            if (!locker) return NextResponse.json({ error: "Locker not found" }, { status: 404 });
+       if (action === "VERIFY") {
+    const locker = await Locker.findOne({ code: lockerCode });
 
-            if (locker.isLockedOut || !locker.pin) {
-                return NextResponse.json({ mode: "LOCKED_OUT" });
-            }
+    if (!locker) {
+        return NextResponse.json(
+            { error: "Locker not found" },
+            { status: 404 }
+        );
+    }
 
-            const inputCode = String(code).trim();
+    const inputCode = String(code).trim();
 
-            if (locker.pin === inputCode) {
-                await Locker.updateOne({ _id: locker._id }, { failedAttempts: 0 });
-                return NextResponse.json({ mode: "OWNER" });
-            }
+    // ==========================================
+    // OWNER PIN VERIFICATION
+    // ==========================================
+    if (verifyType === "OWNER") {
 
-            const parcel = await Parcel.findOne({
-                trackingNumber: inputCode,
-                userId: new mongoose.Types.ObjectId(locker.userId.toString()),
-                status: "PENDING"
+        if (locker.isLockedOut || !locker.pin) {
+            return NextResponse.json({
+                mode: "LOCKED_OUT"
+            });
+        }
+
+        if (locker.pin === inputCode) {
+            await Locker.updateOne(
+                { _id: locker._id },
+                {
+                    failedAttempts: 0,
+                    isLockedOut: false
+                }
+            );
+
+            return NextResponse.json({
+                mode: "OWNER"
+            });
+        }
+
+        const newAttempts =
+            (locker.failedAttempts || 0) + 1;
+
+        if (newAttempts >= 3) {
+            await Locker.updateOne(
+                { _id: locker._id },
+                {
+                    pin: null,
+                    failedAttempts: newAttempts,
+                    isLockedOut: true
+                }
+            );
+
+            await Log.create({
+                userId: locker.userId,
+                lockerId: locker._id,
+                actor: "system",
+                action: "PIN_LOCKOUT",
+                success: false,
+                details: "3 failed PIN attempts reached."
             });
 
-            if (parcel) {
-                parcel.status = "VERIFIED";
-                await parcel.save();
-                await Locker.updateOne({ _id: locker._id }, { failedAttempts: 0 });
-                return NextResponse.json({ mode: "DELIVERY" });
-            }
-
-            const existingParcelWrongStatus = await Parcel.findOne({
-                trackingNumber: inputCode,
-                userId: new mongoose.Types.ObjectId(locker.userId.toString())
+            return NextResponse.json({
+                mode: "LOCKED_OUT"
             });
+        }
 
-            if (existingParcelWrongStatus) {
-                return NextResponse.json({ 
-                    mode: "INVALID", 
-                    details: "Parcel already processed or not pending" 
-                });
-            }
+        await Locker.updateOne(
+            { _id: locker._id },
+            { failedAttempts: newAttempts }
+        );
 
-            const newAttempts = (locker.failedAttempts || 0) + 1;
-            
-            if (newAttempts >= 3) {
-                await Locker.updateOne(
-                    { _id: locker._id }, 
-                    { pin: null, failedAttempts: newAttempts, isLockedOut: true }
-                );
+        return NextResponse.json({
+            mode: "INVALID",
+            attemptsRemaining: 3 - newAttempts
+        });
+    }
+
+    // ==========================================
+    // DELIVERY TRACKING VERIFICATION
+    // ==========================================
+    if (verifyType === "DELIVERY") {
+
+        const parcel = await Parcel.findOne({
+            trackingNumber: inputCode,
+            userId: new mongoose.Types.ObjectId(
+                locker.userId.toString()
+            ),
+            status: "PENDING"
+        });
+
+        if (parcel) {
+            parcel.status = "VERIFIED";
+            await parcel.save();
+
+            return NextResponse.json({
+                mode: "DELIVERY"
+            });
+        }
+
+        const existingParcel = await Parcel.findOne({
+            trackingNumber: inputCode,
+            userId: new mongoose.Types.ObjectId(
+                locker.userId.toString()
+            )
+        });
+
+        if (existingParcel) {
+            return NextResponse.json({
+                mode: "INVALID",
+                details: "Parcel already processed or not pending"
+            });
+        }
+
+        return NextResponse.json({
+            mode: "INVALID",
+            details: "Tracking number not found"
+        });
+    }
+
+    // ==========================================
+    // RETURN OTP VERIFICATION
+    // ==========================================
+    if (verifyType === "RETURN") {
+
+        const returnDoc = await Return.findOne({
+            otp: inputCode,
+            lockerId: locker._id,
+            status: "OTP_ACTIVE"
+        });
+
+        if (returnDoc) {
+            if (returnDoc.otpExpiry && returnDoc.otpExpiry < new Date()) {
+                returnDoc.status = "EXPIRED";
+                await returnDoc.save();
                 await Log.create({
                     userId: locker.userId,
                     lockerId: locker._id,
-                    actor: "system",
-                    action: "PIN_LOCKOUT",
+                    actor: "courier",
+                    action: "RETURN_OTP_INVALID",
                     success: false,
-                    details: "3 failed attempts reached."
+                    details: "OTP expired"
                 });
-                return NextResponse.json({ mode: "LOCKED_OUT" });
-            } else {
-                await Locker.updateOne({ _id: locker._id }, { failedAttempts: newAttempts });
-                return NextResponse.json({ 
-                    mode: "INVALID", 
-                    attemptsRemaining: 3 - newAttempts 
+                return NextResponse.json({
+                    mode: "INVALID",
+                    details: "OTP expired"
                 });
             }
+
+            returnDoc.status = "PICKED_UP";
+            returnDoc.pickedUpDate = new Date();
+            await returnDoc.save();
+
+            await Log.create({
+                userId: locker.userId,
+                lockerId: locker._id,
+                actor: "courier",
+                action: "RETURN_PICKUP_SUCCESS",
+                success: true,
+                details: `Return ${returnDoc._id} picked up`
+            });
+
+            return NextResponse.json({
+                mode: "RETURN_PICKUP"
+            });
         }
+
+        return NextResponse.json({
+            mode: "INVALID",
+            details: "OTP not found or already used"
+        });
+    }
+
+    return NextResponse.json({
+        mode: "INVALID",
+        details: "Invalid verification type"
+    });
+}
 
         if (action === "DELIVERED" || action === "DELIVERY_VALID" || action === "PARCEL_DETECTED") {
             const locker = await Locker.findOne({ code: lockerCode });

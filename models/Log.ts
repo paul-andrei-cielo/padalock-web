@@ -28,6 +28,8 @@ import mongoose, { models } from "mongoose";
     'DELIVERY_VALID',
     'DELIVERY_SUCCESS',
     'RETRIEVE',
+    'RETURN_OTP_INVALID',
+    'RETURN_PICKUP_SUCCESS',
   ],
     required: true
   },

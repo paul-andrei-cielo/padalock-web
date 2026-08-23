@@ -1,5 +1,5 @@
 import { connectDB } from "@/lib/mongodb";
-import Parcel from "@/models/Parcel";
+import Return from "@/models/Return";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 
@@ -9,14 +9,13 @@ export async function GET(req: NextRequest) {
 
         const user = getUserFromRequest(req);
 
-        const parcels = await Parcel.find({
+        const returns = await Return.find({
             userId: user.userId
         }).lean();
 
-        return NextResponse.json(parcels);
+        return NextResponse.json(returns);
 
     } catch (error) {
-
         console.error(error);
 
         return NextResponse.json(
@@ -39,19 +38,18 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { trackingNumber, parcelName } = await req.json();
+        const { itemDescription } = await req.json();
 
-        const parcel = await Parcel.create({
-            trackingNumber,
-            parcelName: parcelName || "Parcel",
+        const returnDoc = await Return.create({
             userId: user.userId,
-            status: "PENDING",
-            deliveryDate: null,
-            retrievedDate: null
+            lockerId: user.lockerId,
+            itemDescription: itemDescription || "Parcel",
+            status: "PENDING"
         });
 
-        return NextResponse.json(parcel);
+        return NextResponse.json(returnDoc);
     } catch (error) {
-        return NextResponse.json({ error: "Failed to create parcel"}, { status: 500 });
+        console.error(error);
+        return NextResponse.json({ error: "Failed to create return" }, { status: 500 });
     }
 }

@@ -59,6 +59,7 @@ interface AuditLogItem {
 
 const navItems = [
   { label: "REGISTER", href: "/register" },
+  { label: "RETURNS", href: "/returns" },
   { label: "ACTIVITY", href: "/activity" },
   { label: "NOTIFICATIONS", href: "/notifications" },
   { label: "ACCOUNT", href: "/account" },

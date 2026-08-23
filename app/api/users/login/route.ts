@@ -53,6 +53,7 @@ export async function POST(req: Request) {
     const token = signToken({
       userId: user._id,
       email: user.email,
+      lockerId: user.lockerId,
     });
 
     return Response.json({
