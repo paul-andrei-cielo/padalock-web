@@ -215,9 +215,22 @@ export default function ActivityPage() {
       if (status === "DELIVERED" && parcel.deliveryDate) activityDate = parcel.deliveryDate;
       else if (status === "RETRIEVED" && parcel.retrievedDate) activityDate = parcel.retrievedDate;
 
-      const relatedLog = logs.find(
-        (log) => log.details?.includes(parcel.trackingNumber) && log.cameraRecording
-      );
+      const relatedLog = logs.find((log) => {
+        if (!log.cameraRecording) return false;
+
+        if (parcel.status === "DELIVERED") {
+          return (
+            log.action === "DELIVERY_SUCCESS" &&
+            log.details?.includes(parcel.trackingNumber)
+          );
+        }
+
+        if (parcel.status === "RETRIEVED") {
+          return log.action === "RETRIEVE";
+        }
+
+        return false;
+      });
 
       return {
         id: parcel._id,
