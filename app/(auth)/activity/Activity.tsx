@@ -45,8 +45,10 @@ interface ActivityItem {
   status: ParcelStatus;
   date: string;
   time: string;
-  hasClip: boolean;
-  clipUrl?: string;
+  hasDeliveryClip: boolean;
+  deliveryClipUrl?: string;
+  hasRetrievalClip: boolean;
+  retrievalClipUrl?: string;
   parcelName?: string;
 }
 
@@ -215,22 +217,21 @@ export default function ActivityPage() {
       if (status === "DELIVERED" && parcel.deliveryDate) activityDate = parcel.deliveryDate;
       else if (status === "RETRIEVED" && parcel.retrievedDate) activityDate = parcel.retrievedDate;
 
-      const relatedLog = logs.find((log) => {
-        if (!log.cameraRecording) return false;
+      const deliveryLog = logs.find(
+        (log) =>
+          log.action === "DELIVERY_SUCCESS" &&
+          log.details?.includes(parcel.trackingNumber) &&
+          log.cameraRecording
+      );
 
-        if (parcel.status === "DELIVERED") {
-          return (
-            log.action === "DELIVERY_SUCCESS" &&
-            log.details?.includes(parcel.trackingNumber)
-          );
-        }
-
-        if (parcel.status === "RETRIEVED") {
-          return log.action === "RETRIEVE";
-        }
-
-        return false;
-      });
+      const retrievalLog =
+        parcel.status === "RETRIEVED"
+          ? logs.find(
+              (log) =>
+                log.action === "RETRIEVE" &&
+                log.cameraRecording
+            )
+          : undefined;
 
       return {
         id: parcel._id,
@@ -238,8 +239,11 @@ export default function ActivityPage() {
         status,
         date: formatDate(activityDate),
         time: formatTime(activityDate),
-        hasClip: !!relatedLog,
-        clipUrl: relatedLog?.cameraRecording,
+        hasDeliveryClip: !!deliveryLog,
+        deliveryClipUrl: deliveryLog?.cameraRecording,
+
+        hasRetrievalClip: !!retrievalLog,
+        retrievalClipUrl: retrievalLog?.cameraRecording,
         parcelName: parcel.parcelName !== "Parcel" ? parcel.parcelName : undefined,
       };
     });
@@ -527,15 +531,27 @@ export default function ActivityPage() {
                               {statusStyles[item.status].label}
                             </span>
 
-                            {item.hasClip && item.clipUrl && (
-                              <button
-                                onClick={() => setSelectedClip(item.clipUrl!)}
-                                className="bg-white/10 hover:bg-white text-white hover:text-[#df4473] p-2.5 rounded-xl transition-all duration-300 hover:rotate-6 active:scale-90"
-                                title="View Security Recording"
-                              >
-                                📹
-                              </button>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {item.hasDeliveryClip && item.deliveryClipUrl && (
+                                <button
+                                  onClick={() => setSelectedClip(item.deliveryClipUrl!)}
+                                  className="bg-white/10 hover:bg-white text-white hover:text-[#df4473] px-3 py-2 rounded-xl transition-all duration-300 active:scale-90"
+                                  title="View Delivery Recording"
+                                >
+                                  📦📹
+                                </button>
+                              )}
+
+                              {item.hasRetrievalClip && item.retrievalClipUrl && (
+                                <button
+                                  onClick={() => setSelectedClip(item.retrievalClipUrl!)}
+                                  className="bg-white/10 hover:bg-white text-white hover:text-[#df4473] px-3 py-2 rounded-xl transition-all duration-300 active:scale-90"
+                                  title="View Retrieval Recording"
+                                >
+                                  🔓📹
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}

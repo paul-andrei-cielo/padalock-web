@@ -66,8 +66,14 @@ export async function POST(req: NextRequest) {
       }
     );
 
+    const playbackUrl = cloudinary.url(result.public_id, {
+      resource_type: "video",
+      format: "mp4",
+      secure: true,
+    });
+
     // DELIVERY
-    
+
     if (eventType === "DELIVERY") {
       if (trackingNumber) {
         await Parcel.findOneAndUpdate(
@@ -76,7 +82,7 @@ export async function POST(req: NextRequest) {
             userId: locker.userId,
           },
           {
-            videoUrl: result.secure_url,
+            videoUrl: playbackUrl,
           },
           {
             new: true,
@@ -91,7 +97,7 @@ export async function POST(req: NextRequest) {
           action: "DELIVERY_SUCCESS",
         },
         {
-          cameraRecording: result.secure_url,
+          cameraRecording: playbackUrl,
         },
         {
           sort: { createdAt: -1 },
@@ -110,7 +116,7 @@ export async function POST(req: NextRequest) {
           action: "RETRIEVE",
         },
         {
-          cameraRecording: result.secure_url,
+          cameraRecording: playbackUrl,
         },
         {
           sort: { createdAt: -1 },
@@ -121,7 +127,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       message: "Clip uploaded successfully",
-      videoUrl: result.secure_url,
+      videoUrl: playbackUrl,
       eventType,
     });
   } catch (error) {
