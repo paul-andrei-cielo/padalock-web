@@ -219,7 +219,8 @@ export default function ActivityPage() {
 
       const deliveryLog = logs.find(
         (log) =>
-          log.action === "DELIVERY_SUCCESS" &&
+          (log.action === "DELIVERY_SUCCESS" ||
+            log.action === "DELIVERY_VALID") &&
           log.details?.includes(parcel.trackingNumber) &&
           log.cameraRecording
       );
