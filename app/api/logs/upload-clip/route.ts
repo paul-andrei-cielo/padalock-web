@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      await Log.findOneAndUpdate(
+      const updatedDeliveryLog = await Log.findOneAndUpdate(
         {
           lockerId: locker._id,
           userId: locker.userId,
@@ -106,6 +106,10 @@ export async function POST(req: NextRequest) {
           new: true,
         }
       );
+      console.log(
+      "DELIVERY CLIP LOG UPDATE:",
+      updatedDeliveryLog
+    );
     }
 
     // RETRIEVAL
@@ -117,6 +121,7 @@ export async function POST(req: NextRequest) {
           userId: locker.userId,
           action: "RETRIEVE",
         },
+        
         {
           cameraRecording: playbackUrl,
         },

@@ -17,6 +17,7 @@ interface Parcel {
   updatedAt: string;
   deliveryDate?: string;
   retrievedDate?: string;
+  videoUrl?: string;
 }
 
 interface Log {
@@ -225,6 +226,10 @@ export default function ActivityPage() {
           log.cameraRecording
       );
 
+      const deliveryClipUrl =
+        parcel.videoUrl ||
+        deliveryLog?.cameraRecording;
+
       const retrievalLog =
         parcel.status === "RETRIEVED"
           ? logs.find(
@@ -240,8 +245,8 @@ export default function ActivityPage() {
         status,
         date: formatDate(activityDate),
         time: formatTime(activityDate),
-        hasDeliveryClip: !!deliveryLog,
-        deliveryClipUrl: deliveryLog?.cameraRecording,
+        hasDeliveryClip: !!deliveryClipUrl,
+        deliveryClipUrl,
 
         hasRetrievalClip: !!retrievalLog,
         retrievalClipUrl: retrievalLog?.cameraRecording,
