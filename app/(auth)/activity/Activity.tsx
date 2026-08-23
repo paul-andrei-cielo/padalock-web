@@ -213,7 +213,12 @@ export default function ActivityPage() {
   const activities: ActivityItem[] = useMemo(() => {
     return parcels.map((parcel) => {
       let activityDate = parcel.createdAt;
-      const status = parcel.status as ParcelStatus;
+      const status: ParcelStatus =
+        parcel.status === "DELIVERED"
+          ? "DELIVERED"
+          : parcel.status === "RETRIEVED"
+          ? "RETRIEVED"
+          : "PENDING";
 
       if (status === "DELIVERED" && parcel.deliveryDate) activityDate = parcel.deliveryDate;
       else if (status === "RETRIEVED" && parcel.retrievedDate) activityDate = parcel.retrievedDate;
