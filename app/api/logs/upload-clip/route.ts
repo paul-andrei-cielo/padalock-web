@@ -94,7 +94,9 @@ export async function POST(req: NextRequest) {
         {
           lockerId: locker._id,
           userId: locker.userId,
-          action: "DELIVERY_SUCCESS",
+          action: {
+            $in: ["DELIVERY_SUCCESS", "DELIVERY_VALID"],
+          },
         },
         {
           cameraRecording: playbackUrl,
