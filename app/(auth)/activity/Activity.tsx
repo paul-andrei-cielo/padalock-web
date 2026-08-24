@@ -667,6 +667,8 @@ export default function ActivityPage() {
                                     ? "bg-cyan-400"
                                     : item.status === "DELIVERED"
                                     ? "bg-green-400"
+                                    : item.status === "RETURN_PICKUP"
+                                    ? "bg-purple-400"
                                     : "bg-orange-400"
                                 }`}
                               />
