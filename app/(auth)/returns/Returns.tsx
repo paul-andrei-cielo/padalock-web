@@ -31,23 +31,40 @@ const statusColors: Record<string, { bg: string; text: string }> = {
 
   READY_FOR_PICKUP: {
     bg: "bg-[#cfe8ec]",
-    text: "text-[#1383a3]"
+    text: "text-[#1383a3]",
   },
 
-  OTP_ACTIVE: { bg: "bg-[#f5d9e8]", text: "text-[#df4473]" },
-  PICKED_UP: { bg: "bg-[#b8d8c7]", text: "text-[#0d7a43]" },
-  EXPIRED: { bg: "bg-[#e3c4c4]", text: "text-[#a33a3a]" },
-  CANCELLED: { bg: "bg-gray-300", text: "text-gray-700" },
+  OTP_ACTIVE: {
+    bg: "bg-[#f5d9e8]",
+    text: "text-[#df4473]",
+  },
+
+  PICKED_UP: {
+    bg: "bg-[#b8d8c7]",
+    text: "text-[#0d7a43]",
+  },
+
+  EXPIRED: {
+    bg: "bg-[#e3c4c4]",
+    text: "text-[#a33a3a]",
+  },
+
+  CANCELLED: {
+    bg: "bg-gray-300",
+    text: "text-gray-700",
+  },
 };
 
 const API_BASE = "/api/returns";
 
 export default function ReturnsPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(
+    null
+  );
 
   const [returns, setReturns] = useState<Return[]>([]);
   const [parcelCount, setParcelCount] = useState(1);
-  const [items, setItems] = useState<string[]>([""]);  
+  const [items, setItems] = useState<string[]>([""]);
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("ALL");
@@ -59,6 +76,7 @@ export default function ReturnsPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       setIsAuthenticated(false);
       window.location.href = "/login";
@@ -77,6 +95,7 @@ export default function ReturnsPage() {
   const fetchReturns = async () => {
     try {
       setDataLoading(true);
+
       const token = localStorage.getItem("token")!;
 
       const res = await fetch(API_BASE, {
@@ -91,7 +110,16 @@ export default function ReturnsPage() {
       }
 
       const data = await res.json();
-      setReturns(Array.isArray(data) ? data : []);
+
+      const sortedReturns = Array.isArray(data)
+        ? [...data].sort(
+            (a: Return, b: Return) =>
+              new Date(b.createdAt).getTime() -
+              new Date(a.createdAt).getTime()
+          )
+        : [];
+
+      setReturns(sortedReturns);
       setError("");
     } catch (err: any) {
       console.error("Error fetching returns:", err);
@@ -103,55 +131,56 @@ export default function ReturnsPage() {
     }
   };
 
- const handleCreate = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (
-    items.length !== parcelCount ||
-    items.some((item) => !item.trim())
-  ) {
-    setError("Please enter a description for every parcel");
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-
-  try {
-    const token = localStorage.getItem("token")!;
-
-    const res = await fetch(API_BASE, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        parcelCount,
-        items: items.map((item) => item.trim()),
-      }),
-    });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || "Failed to create return");
+    if (
+      items.length !== parcelCount ||
+      items.some((item) => !item.trim())
+    ) {
+      setError("Please enter a description for every parcel");
+      return;
     }
 
-    setParcelCount(1);
-    setItems([""]);
+    setLoading(true);
+    setError("");
 
-    await fetchReturns();
-  } catch (err: any) {
-    console.error("Error creating return:", err);
-    setError(err.message || "Failed to create return");
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const token = localStorage.getItem("token")!;
+
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          parcelCount,
+          items: items.map((item) => item.trim()),
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to create return");
+      }
+
+      setParcelCount(1);
+      setItems([""]);
+
+      await fetchReturns();
+    } catch (err: any) {
+      console.error("Error creating return:", err);
+      setError(err.message || "Failed to create return");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleGenerateOtp = async (returnId: string) => {
     try {
       setOtpLoadingId(returnId);
+
       const token = localStorage.getItem("token")!;
 
       const res = await fetch(`${API_BASE}/${returnId}`, {
@@ -160,7 +189,9 @@ export default function ReturnsPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ action: "generate_otp" }),
+        body: JSON.stringify({
+          action: "generate_otp",
+        }),
       });
 
       if (!res.ok) {
@@ -205,6 +236,7 @@ export default function ReturnsPage() {
 
   const filteredReturns = returns.filter((ret) => {
     if (activeFilter === "ALL") return true;
+
     return ret.status === activeFilter;
   });
 
@@ -237,8 +269,10 @@ export default function ReturnsPage() {
     switch (tab) {
       case "OTP_ACTIVE":
         return "ACTIVE";
+
       case "PICKED_UP":
         return "PICKED UP";
+
       default:
         return tab;
     }
@@ -249,6 +283,7 @@ export default function ReturnsPage() {
 
     try {
       const date = new Date(dateString);
+
       if (isNaN(date.getTime())) return "N/A";
 
       return date.toLocaleDateString("en-US", {
@@ -266,6 +301,7 @@ export default function ReturnsPage() {
 
     try {
       const date = new Date(dateString);
+
       if (isNaN(date.getTime())) return "";
 
       return date.toLocaleTimeString("en-US", {
@@ -279,6 +315,7 @@ export default function ReturnsPage() {
 
   const isOtpExpired = (otpExpiry?: string | null): boolean => {
     if (!otpExpiry) return false;
+
     return new Date(otpExpiry).getTime() < Date.now();
   };
 
@@ -299,6 +336,7 @@ export default function ReturnsPage() {
           <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight animate-bounce">
             Looks like you're not logged in
           </div>
+
           <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
             Redirecting to login...
           </div>
@@ -322,7 +360,10 @@ export default function ReturnsPage() {
         {/* HEADER */}
         <header className="relative z-[100] shrink-0 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-xl border border-white/30 shadow-lg transition-all duration-300">
           <div className="flex items-center justify-between">
-            <Link href="/home" className="transition-transform duration-300 hover:scale-105">
+            <Link
+              href="/home"
+              className="transition-transform duration-300 hover:scale-105"
+            >
               <Image
                 src="/padalock-logo.png"
                 alt="PadaLock logo"
@@ -344,6 +385,7 @@ export default function ReturnsPage() {
                     className="relative group transition-all duration-300"
                   >
                     {item.label}
+
                     <span
                       className={`absolute -bottom-1 left-0 h-0.5 bg-white transition-all duration-300 ${
                         isActive ? "w-full" : "w-0 group-hover:w-full"
@@ -365,11 +407,13 @@ export default function ReturnsPage() {
                     isMenuOpen ? "rotate-45" : ""
                   }`}
                 />
+
                 <span
                   className={`h-0.5 w-full bg-white rounded-full transition-all duration-300 ${
                     isMenuOpen ? "opacity-0" : ""
                   }`}
                 />
+
                 <span
                   className={`h-0.5 w-full bg-white rounded-full transition-all duration-300 origin-left ${
                     isMenuOpen ? "-rotate-45" : ""
@@ -399,7 +443,11 @@ export default function ReturnsPage() {
                     style={{ transitionDelay: `${idx * 50}ms` }}
                     className={`p-4 text-[#df4473] font-bold rounded-xl transition-all duration-200 transform ${
                       isActive ? "bg-pink-50" : "hover:bg-pink-50"
-                    } ${isMenuOpen ? "translate-x-0" : "-translate-x-4"}`}
+                    } ${
+                      isMenuOpen
+                        ? "translate-x-0"
+                        : "-translate-x-4"
+                    }`}
                   >
                     {item.label}
                   </Link>
@@ -535,6 +583,7 @@ export default function ReturnsPage() {
                 {dataLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 text-white/40">
                     <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-white mb-4" />
+
                     <p className="text-sm font-bold uppercase tracking-widest">
                       Loading returns...
                     </p>
@@ -548,11 +597,19 @@ export default function ReturnsPage() {
 
                     const displayParcelCount =
                       ret.parcelCount || displayItems.length;
+
                     const expired =
-                      ret.status === "OTP_ACTIVE" && isOtpExpired(ret.otpExpiry);
-                    const effectiveStatus = expired ? "EXPIRED" : ret.status;
+                      ret.status === "OTP_ACTIVE" &&
+                      isOtpExpired(ret.otpExpiry);
+
+                    const effectiveStatus = expired
+                      ? "EXPIRED"
+                      : ret.status;
+
                     const statusStyle =
-                      statusColors[effectiveStatus as keyof typeof statusColors] || {
+                      statusColors[
+                        effectiveStatus as keyof typeof statusColors
+                      ] || {
                         bg: "bg-gray-300",
                         text: "text-gray-800",
                       };
@@ -561,9 +618,13 @@ export default function ReturnsPage() {
                       ret.status === "READY_FOR_PICKUP" ||
                       ret.status === "OTP_ACTIVE" ||
                       ret.status === "EXPIRED";
+
                     const canDelete =
-                      ret.status !== "PICKED_UP" && ret.status !== "CANCELLED";
-                    const isOtpVisible = expandedOtpId === ret._id;
+                      ret.status !== "PICKED_UP" &&
+                      ret.status !== "CANCELLED";
+
+                    const isOtpVisible =
+                      expandedOtpId === ret._id;
 
                     return (
                       <div
@@ -579,21 +640,29 @@ export default function ReturnsPage() {
                                     key={index}
                                     className="text-lg font-bold text-white break-words"
                                   >
-                                    {displayItems.length > 1 ? `${index + 1}. ` : ""}
+                                    {displayItems.length > 1
+                                      ? `${index + 1}. `
+                                      : ""}
                                     {item}
                                   </h3>
                                 ))}
 
                                 <p className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">
-                                  {displayParcelCount} {displayParcelCount === 1 ? "parcel" : "parcels"}
+                                  {displayParcelCount}{" "}
+                                  {displayParcelCount === 1
+                                    ? "parcel"
+                                    : "parcels"}
                                 </p>
                               </div>
                             </div>
+
                             <p className="mt-1 text-[11px] text-white/40">
                               Created: {formatDate(ret.createdAt)}
+
                               {ret.status === "PICKED_UP" && (
                                 <>
-                                  {" • "}Picked up: {formatDate(ret.pickedUpDate)}
+                                  {" • "}Picked up:{" "}
+                                  {formatDate(ret.pickedUpDate)}
                                 </>
                               )}
                             </p>
@@ -617,7 +686,9 @@ export default function ReturnsPage() {
                                     )
                                   }
                                   className="text-lg text-white/60 hover:text-red-300 hover:scale-125 transition-all"
-                                  aria-label={`Delete return for ${displayItems.join(", ")}`}
+                                  aria-label={`Delete return for ${displayItems.join(
+                                    ", "
+                                  )}`}
                                 >
                                   🗑
                                 </button>
@@ -635,12 +706,16 @@ export default function ReturnsPage() {
                                   type="button"
                                   onClick={() =>
                                     setExpandedOtpId(
-                                      isOtpVisible ? null : ret._id
+                                      isOtpVisible
+                                        ? null
+                                        : ret._id
                                     )
                                   }
                                   className="text-xs font-bold text-white/70 uppercase tracking-widest hover:text-white transition-all"
                                 >
-                                  {isOtpVisible ? "Hide OTP ▲" : "View OTP ▼"}
+                                  {isOtpVisible
+                                    ? "Hide OTP ▲"
+                                    : "View OTP ▼"}
                                 </button>
 
                                 {isOtpVisible && (
@@ -648,17 +723,24 @@ export default function ReturnsPage() {
                                     <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">
                                       Relay this code to the rider
                                     </p>
+
                                     <p className="text-4xl font-black tracking-[0.3em] text-white">
                                       {ret.otp}
                                     </p>
+
                                     <p className="text-[11px] text-white/40">
                                       Expires {formatDate(ret.otpExpiry)} at{" "}
                                       {formatTime(ret.otpExpiry)}
                                     </p>
+
                                     <button
                                       type="button"
-                                      onClick={() => handleGenerateOtp(ret._id)}
-                                      disabled={otpLoadingId === ret._id}
+                                      onClick={() =>
+                                        handleGenerateOtp(ret._id)
+                                      }
+                                      disabled={
+                                        otpLoadingId === ret._id
+                                      }
                                       className="mt-2 text-[11px] font-bold text-white/70 uppercase tracking-widest hover:text-white transition-all disabled:opacity-50"
                                     >
                                       {otpLoadingId === ret._id
@@ -671,8 +753,12 @@ export default function ReturnsPage() {
                             ) : (
                               <button
                                 type="button"
-                                onClick={() => handleGenerateOtp(ret._id)}
-                                disabled={otpLoadingId === ret._id}
+                                onClick={() =>
+                                  handleGenerateOtp(ret._id)
+                                }
+                                disabled={
+                                  otpLoadingId === ret._id
+                                }
                                 className="w-full h-11 rounded-2xl bg-[#df4473] text-white font-black text-xs uppercase tracking-[0.2em] shadow-md hover:scale-[1.01] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
                               >
                                 {otpLoadingId === ret._id
