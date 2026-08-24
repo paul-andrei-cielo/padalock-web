@@ -515,7 +515,6 @@ export default function NotificationsPage() {
                 </div>
               ) : (
                 filteredNotifications.map((item, i) => {
-                  const style = typeStyles[item.type];
                   const isAlert = item.type === "FAILED_PIN";
 
                   return (
@@ -576,15 +575,6 @@ export default function NotificationsPage() {
                         >
                           {item.date} • {item.time}
                         </p>
-                      </div>
-
-                      {/* TYPE */}
-                      <div className="flex items-center justify-between sm:justify-end gap-4">
-                        <span
-                          className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm transition-transform duration-300 group-hover:scale-105 ${style.bg} ${style.text}`}
-                        >
-                          {item.type.replace("_", " ")}
-                        </span>
                       </div>
                     </div>
                   );
