@@ -573,19 +573,20 @@ export default function ReturnsPage() {
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                           <div className="flex-1 min-w-0">
                             <div>
-                              <h3 className="text-lg font-bold text-white">
-                                {displayParcelCount} {displayParcelCount === 1 ? "Parcel" : "Parcels"}
-                              </h3>
-
-                              <div className="mt-1 space-y-1">
+                              <div className="space-y-1">
                                 {displayItems.map((item, index) => (
-                                  <p
+                                  <h3
                                     key={index}
-                                    className="text-sm text-white/70 break-words"
+                                    className="text-lg font-bold text-white break-words"
                                   >
-                                    {index + 1}. {item}
-                                  </p>
+                                    {displayItems.length > 1 ? `${index + 1}. ` : ""}
+                                    {item}
+                                  </h3>
                                 ))}
+
+                                <p className="text-[11px] font-semibold text-white/50 uppercase tracking-wider">
+                                  {displayParcelCount} {displayParcelCount === 1 ? "parcel" : "parcels"}
+                                </p>
                               </div>
                             </div>
                             <p className="mt-1 text-[11px] text-white/40">
