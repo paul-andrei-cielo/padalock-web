@@ -52,12 +52,13 @@ export default function RegisterPage() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+
     if (!token) {
       setIsAuthenticated(false);
       window.location.href = "/login";
       return;
     }
-    
+
     setIsAuthenticated(true);
   }, []);
 
@@ -70,8 +71,9 @@ export default function RegisterPage() {
   const fetchParcels = async () => {
     try {
       setDataLoading(true);
+
       const token = localStorage.getItem("token")!;
-      
+
       const res = await fetch(API_BASE, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -84,7 +86,16 @@ export default function RegisterPage() {
       }
 
       const data = await res.json();
-      setParcels(Array.isArray(data) ? data : []);
+
+      const sortedParcels = Array.isArray(data)
+        ? [...data].sort(
+            (a: Parcel, b: Parcel) =>
+              new Date(b.createdAt).getTime() -
+              new Date(a.createdAt).getTime()
+          )
+        : [];
+
+      setParcels(sortedParcels);
       setError("");
     } catch (err: any) {
       console.error("Error fetching parcels:", err);
@@ -98,7 +109,7 @@ export default function RegisterPage() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!trackingNumber.trim()) {
       setError("Please enter a tracking number");
       return;
@@ -109,7 +120,7 @@ export default function RegisterPage() {
 
     try {
       const token = localStorage.getItem("token")!;
-      
+
       const res = await fetch(API_BASE, {
         method: "POST",
         headers: {
@@ -129,6 +140,7 @@ export default function RegisterPage() {
 
       setTrackingNumber("");
       setParcelName("");
+
       await fetchParcels();
     } catch (err: any) {
       console.error("Error registering parcel:", err);
@@ -158,7 +170,7 @@ export default function RegisterPage() {
 
     try {
       const token = localStorage.getItem("token")!;
-      
+
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "PUT",
         headers: {
@@ -200,7 +212,7 @@ export default function RegisterPage() {
 
     try {
       const token = localStorage.getItem("token")!;
-      
+
       const res = await fetch(`${API_BASE}/${parcelId}`, {
         method: "DELETE",
         headers: {
@@ -227,6 +239,7 @@ export default function RegisterPage() {
 
   const getStatusDisplay = (status: string) => {
     const normalizedStatus = status.toUpperCase();
+
     return normalizedStatus === "PENDING"
       ? "Pending"
       : normalizedStatus === "DELIVERED"
@@ -241,6 +254,7 @@ export default function RegisterPage() {
 
     try {
       const date = new Date(dateString);
+
       if (isNaN(date.getTime())) return "N/A";
 
       return date.toLocaleDateString("en-US", {
@@ -278,6 +292,7 @@ export default function RegisterPage() {
           <div className="text-white text-2xl md:text-3xl font-extrabold mb-4 leading-tight animate-bounce">
             Looks like you're not logged in
           </div>
+
           <div className="text-white/90 text-lg md:text-xl font-semibold animate-pulse">
             Redirecting to login...
           </div>
@@ -301,7 +316,10 @@ export default function RegisterPage() {
         {/* HEADER */}
         <header className="relative z-[100] shrink-0 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-xl border border-white/30 shadow-lg transition-all duration-300">
           <div className="flex items-center justify-between">
-            <Link href="/home" className="transition-transform duration-300 hover:scale-105">
+            <Link
+              href="/home"
+              className="transition-transform duration-300 hover:scale-105"
+            >
               <Image
                 src="/padalock-logo.png"
                 alt="PadaLock logo"
@@ -320,6 +338,7 @@ export default function RegisterPage() {
                   className="relative group transition-all duration-300"
                 >
                   {item.label}
+
                   <span
                     className={`absolute -bottom-1 left-0 h-0.5 bg-white transition-all duration-300 ${
                       item.href === "/register"
@@ -342,11 +361,13 @@ export default function RegisterPage() {
                     isMenuOpen ? "rotate-45" : ""
                   }`}
                 />
+
                 <span
                   className={`h-0.5 w-full bg-white rounded-full transition-all duration-300 ${
                     isMenuOpen ? "opacity-0" : ""
                   }`}
                 />
+
                 <span
                   className={`h-0.5 w-full bg-white rounded-full transition-all duration-300 origin-left ${
                     isMenuOpen ? "-rotate-45" : ""
@@ -396,6 +417,7 @@ export default function RegisterPage() {
                 <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
                   Tracking Number
                 </label>
+
                 <input
                   id="trackingNumber"
                   type="text"
@@ -413,6 +435,7 @@ export default function RegisterPage() {
                 <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
                   Parcel Name (Optional)
                 </label>
+
                 <input
                   id="parcelName"
                   type="text"
@@ -466,13 +489,12 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div
-              className={`mt-6 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full`}
-            >
+            <div className="mt-6 flex-1 overflow-y-auto pr-1 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
               <div className="flex flex-col gap-3">
                 {dataLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 text-white/40">
                     <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-white mb-4" />
+
                     <p className="text-sm font-bold uppercase tracking-widest">
                       Loading parcels...
                     </p>
@@ -504,13 +526,18 @@ export default function RegisterPage() {
                                   setEditTrackingNumber(e.target.value)
                                 }
                                 onKeyDown={(e) => {
-                                  if (e.key === "Enter")
+                                  if (e.key === "Enter") {
                                     handleUpdate(parcel._id);
-                                  if (e.key === "Escape") cancelEdit();
+                                  }
+
+                                  if (e.key === "Escape") {
+                                    cancelEdit();
+                                  }
                                 }}
                                 className="w-full rounded-2xl bg-white/20 border border-white/30 px-4 py-2 text-lg font-bold text-white outline-none focus:bg-white/30"
                                 autoFocus
                               />
+
                               <input
                                 type="text"
                                 value={editParcelName}
@@ -518,9 +545,13 @@ export default function RegisterPage() {
                                   setEditParcelName(e.target.value)
                                 }
                                 onKeyDown={(e) => {
-                                  if (e.key === "Enter")
+                                  if (e.key === "Enter") {
                                     handleUpdate(parcel._id);
-                                  if (e.key === "Escape") cancelEdit();
+                                  }
+
+                                  if (e.key === "Escape") {
+                                    cancelEdit();
+                                  }
                                 }}
                                 className="w-full rounded-2xl bg-white/20 border border-white/30 px-4 py-2 text-sm text-white outline-none focus:bg-white/30"
                                 placeholder="Parcel name"
@@ -531,13 +562,17 @@ export default function RegisterPage() {
                               <h3 className="text-lg font-bold text-white break-all">
                                 {parcel.trackingNumber}
                               </h3>
+
                               <p className="text-xs font-medium text-white/60 uppercase tracking-wider">
                                 {parcel.parcelName}
                               </p>
+
                               <p className="mt-1 text-[11px] text-white/40">
                                 Created: {formatDate(parcel.createdAt)}
-                                {" • "}Delivered: {formatDate(parcel.deliveryDate)}
-                                {" • "}Retrieved: {formatDate(parcel.retrievedDate)}
+                                {" • "}Delivered:{" "}
+                                {formatDate(parcel.deliveryDate)}
+                                {" • "}Retrieved:{" "}
+                                {formatDate(parcel.retrievedDate)}
                               </p>
                             </>
                           )}
@@ -561,6 +596,7 @@ export default function RegisterPage() {
                                 >
                                   ✓
                                 </button>
+
                                 <button
                                   type="button"
                                   onClick={cancelEdit}
@@ -580,6 +616,7 @@ export default function RegisterPage() {
                                 >
                                   ✎
                                 </button>
+
                                 <button
                                   type="button"
                                   onClick={() =>
