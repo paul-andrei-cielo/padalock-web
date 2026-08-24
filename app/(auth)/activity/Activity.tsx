@@ -4,7 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useEffect } from "react";
 
-type ParcelStatus = "PENDING" | "DELIVERED" | "RETRIEVED";
+type ParcelStatus =
+  | "PENDING"
+  | "DELIVERED"
+  | "RETRIEVED"
+  | "RETURN_PICKUP";
 type ViewMode = "MAIN_ACTIVITY" | "AUDIT_LOGS";
 type FilterStatus = "ALL" | ParcelStatus;
 
@@ -72,10 +76,26 @@ const API_BASE = "/api/parcels";
 const LOGS_API = "/api/logs";
 const LOCKER_API = "/api/locker";
 
-const statusStyles: Record<ParcelStatus, { label: string; pill: string }> = {
-  PENDING: { label: "Pending", pill: "bg-[#edd9cb] text-[#d46800]" },
-  DELIVERED: { label: "Delivered", pill: "bg-[#b8d8c7] text-[#0d7a43]" },
-  RETRIEVED: { label: "Retrieved", pill: "bg-[#cfe8ec] text-[#1383a3]" },
+const statusStyles: Record<
+  ParcelStatus,
+  { label: string; pill: string }
+> = {
+  PENDING: {
+    label: "Pending",
+    pill: "bg-[#edd9cb] text-[#d46800]",
+  },
+  DELIVERED: {
+    label: "Delivered",
+    pill: "bg-[#b8d8c7] text-[#0d7a43]",
+  },
+  RETRIEVED: {
+    label: "Retrieved",
+    pill: "bg-[#cfe8ec] text-[#1383a3]",
+  },
+  RETURN_PICKUP: {
+    label: "Return Picked Up",
+    pill: "bg-[#ead7f5] text-[#7b3fa0]",
+  },
 };
 
 const scrollbarClass =
@@ -211,8 +231,8 @@ export default function ActivityPage() {
     });
   };
 
-  const activities: ActivityItem[] = useMemo(() => {
-    return parcels.map((parcel) => {
+ const activities: ActivityItem[] = useMemo(() => {
+  const parcelActivities: ActivityItem[] = parcels.map((parcel) => {
       let activityDate = parcel.createdAt;
       const status: ParcelStatus =
         parcel.status === "DELIVERED"
@@ -261,8 +281,31 @@ export default function ActivityPage() {
         retrievalClipUrl: retrievalLog?.cameraRecording,
         parcelName: parcel.parcelName !== "Parcel" ? parcel.parcelName : undefined,
       };
-    });
-  }, [parcels, logs]);
+      });
+
+  const returnPickupActivities: ActivityItem[] = logs
+    .filter(
+      (log) =>
+        log.action === "RETURN_PICKUP_SUCCESS"
+    )
+    .map((log) => ({
+      id: `return-${log._id}`,
+      trackingNumber: "Return Pickup",
+      status: "RETURN_PICKUP" as ParcelStatus,
+      date: formatDate(log.timestamp),
+      time: formatTime(log.timestamp),
+
+      hasDeliveryClip: false,
+      deliveryClipUrl: undefined,
+
+      hasRetrievalClip: !!log.cameraRecording,
+      retrievalClipUrl: log.cameraRecording,
+
+      parcelName: "Returned Parcel",
+    }));
+
+  return [...parcelActivities, ...returnPickupActivities];
+}, [parcels, logs]);
 
   const filteredActivities = useMemo(() => {
     if (activeFilter === "ALL") return activities;
@@ -489,12 +532,13 @@ export default function ActivityPage() {
               {viewMode === "MAIN_ACTIVITY" ? (
                 <div key="main-view" className="flex-1 min-h-0 flex flex-col">
                   <div className="mb-5 shrink-0">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-1 rounded-2xl bg-white/10 p-1 border border-white/10">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-1 rounded-2xl bg-white/10 p-1 border border-white/10">
                       {[
                         { label: "ALL", value: "ALL" },
                         { label: "PENDING", value: "PENDING" },
                         { label: "DELIVERED", value: "DELIVERED" },
                         { label: "RETRIEVED", value: "RETRIEVED" },
+                        { label: "RETURNS", value: "RETURN_PICKUP" },
                       ].map((filter) => {
                         const isActive = activeFilter === filter.value;
                         return (
@@ -563,9 +607,13 @@ export default function ActivityPage() {
                                 <button
                                   onClick={() => setSelectedClip(item.retrievalClipUrl!)}
                                   className="bg-white/10 hover:bg-white text-white hover:text-[#df4473] px-3 py-2 rounded-xl transition-all duration-300 active:scale-90"
-                                  title="View Retrieval Recording"
+                                  title={
+                                    item.status === "RETURN_PICKUP"
+                                      ? "View Return Pickup Recording"
+                                      : "View Retrieval Recording"
+                                  }
                                 >
-                                  🔓📹
+                                  {item.status === "RETURN_PICKUP" ? "↩️📹" : "🔓📹"}
                                 </button>
                               )}
                             </div>
