@@ -34,6 +34,12 @@ interface Log {
   details: string;
   cameraRecording?: string;
   timestamp: string;
+
+  returnInfo?: {
+    parcelCount?: number;
+    items?: string[];
+    itemDescription?: string;
+  } | null;
 }
 
 interface Locker {
@@ -46,6 +52,7 @@ interface Locker {
 
 interface ActivityItem {
   id: string;
+  logId?: string;
   trackingNumber: string;
   status: ParcelStatus;
   date: string;
@@ -180,6 +187,54 @@ export default function ActivityPage() {
     }
   };
 
+  const handleDeleteActivity = async (
+  logId: string
+) => {
+  const confirmed = window.confirm(
+    "Delete this return activity and its video clip?"
+  );
+
+  if (!confirmed) return;
+
+  try {
+    const token =
+      localStorage.getItem("token");
+
+    if (!token) return;
+
+    const res = await fetch(LOGS_API, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        id: logId,
+      }),
+    });
+
+    if (!res.ok) {
+      const data =
+        await res.json().catch(() => ({}));
+
+      throw new Error(
+        data.error ||
+        "Failed to delete activity"
+      );
+    }
+
+    await fetchLogs();
+
+  } catch (err) {
+    console.error(
+      "Delete activity error:",
+      err
+    );
+
+    alert("Failed to delete activity");
+  }
+};
+
   const fetchLocker = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -284,14 +339,35 @@ export default function ActivityPage() {
       });
 
   const returnPickupActivities: ActivityItem[] = logs
-    .filter(
-      (log) =>
-        log.action === "RETURN_PICKUP_SUCCESS"
-    )
-    .map((log) => ({
+  .filter(
+    (log) =>
+      log.action === "RETURN_PICKUP_SUCCESS"
+  )
+  .map((log) => {
+    const returnItems =
+      log.returnInfo?.items &&
+      log.returnInfo.items.length > 0
+        ? log.returnInfo.items
+        : log.returnInfo?.itemDescription
+        ? [log.returnInfo.itemDescription]
+        : [];
+
+    const parcelCount =
+      log.returnInfo?.parcelCount ||
+      returnItems.length ||
+      1;
+
+    return {
       id: `return-${log._id}`,
-      trackingNumber: "Return Pickup",
+      logId: log._id,
+
+      trackingNumber:
+        returnItems.length > 0
+          ? returnItems.join(", ")
+          : "Return Pickup",
+
       status: "RETURN_PICKUP" as ParcelStatus,
+
       date: formatDate(log.timestamp),
       time: formatTime(log.timestamp),
 
@@ -301,8 +377,14 @@ export default function ActivityPage() {
       hasRetrievalClip: !!log.cameraRecording,
       retrievalClipUrl: log.cameraRecording,
 
-      parcelName: "Returned Parcel",
-    }));
+      parcelName:
+        `${parcelCount} ${
+          parcelCount === 1
+            ? "Returned Parcel"
+            : "Returned Parcels"
+        }`,
+    };
+  });
 
   return [...parcelActivities, ...returnPickupActivities];
 }, [parcels, logs]);
@@ -614,6 +696,16 @@ export default function ActivityPage() {
                                   }
                                 >
                                   {item.status === "RETURN_PICKUP" ? "↩️📹" : "🔓📹"}
+                                </button>
+                              )}
+                              {item.status === "RETURN_PICKUP" && item.logId && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteActivity(item.logId!)}
+                                  className="bg-white/10 hover:bg-red-500/80 text-white px-3 py-2 rounded-xl transition-all duration-300 active:scale-90"
+                                  title="Delete Return Activity"
+                                >
+                                  🗑️
                                 </button>
                               )}
                             </div>
