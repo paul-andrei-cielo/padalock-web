@@ -4,7 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-type NotificationType = "DELIVERED" | "FAILED_PIN" | "RETRIEVED" | "GENERAL";
+type NotificationType =
+  | "DELIVERED"
+  | "FAILED_PIN"
+  | "RETRIEVED"
+  | "RETURN_PICKUP"
+  | "GENERAL";
 
 interface NotificationItem {
   id: string;
@@ -50,6 +55,10 @@ const typeStyles: Record<
   GENERAL: {
     bg: "bg-white/20",
     text: "text-white",
+  },
+  RETURN_PICKUP: {
+    bg: "bg-[#ead7f5]",
+    text: "text-[#7b3fa0]",
   },
 };
 
@@ -152,7 +161,7 @@ export default function NotificationsPage() {
               break;
 
             case "RETURN_PICKUP_SUCCESS":
-              type = "RETRIEVED";
+              type = "RETURN_PICKUP";
               title = "Return Picked Up";
 
               if (log.returnInfo?.items?.length) {
