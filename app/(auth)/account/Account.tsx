@@ -217,7 +217,7 @@ export default function AccountPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          id: locker?.id,
+          id: locker?._id,
           pin: newPin,
           pinChanged: true,
         }),
