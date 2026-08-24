@@ -104,6 +104,15 @@ export async function POST(req: NextRequest) {
             parcel.status = "VERIFIED";
             await parcel.save();
 
+            await Log.create({
+                userId: locker.userId,
+                lockerId: locker._id,
+                actor: "courier",
+                action: "DELIVERY_VALID",
+                success: true,
+                details: `Tracking number ${parcel.trackingNumber} verified`
+            });
+
             return NextResponse.json({
                 mode: "DELIVERY"
             });
@@ -161,6 +170,15 @@ export async function POST(req: NextRequest) {
             returnDoc.status = "PICKUP_ACTIVE";
             await returnDoc.save();
 
+            await Log.create({
+            userId: locker.userId,
+            lockerId: locker._id,
+            actor: "courier",
+            action: "RETURN_OTP_VALID",
+            success: true,
+            details: `Return OTP successfully verified for return ${returnDoc._id}`
+        });
+
             return NextResponse.json({
                 mode: "RETURN_PICKUP"
             });
@@ -213,13 +231,35 @@ export async function POST(req: NextRequest) {
                 );
             }
 
+            let details = action;
+
+            if (action === "PIN_VALID") {
+                details = "Owner PIN successfully verified";
+            }
+
+            if (action === "INVALID_CODE") {
+                details = "Entered code was rejected";
+            }
+
+            if (action === "LOCK_OPEN") {
+                details = `Locker ${locker.code} opened`;
+            }
+
+            if (action === "LOCK_CLOSED") {
+                details = `Locker ${locker.code} closed`;
+            }
+
+            if (action === "LID_OPEN_TOO_LONG") {
+                details = `Locker ${locker.code} remained open too long`;
+            }
+
             await Log.create({
                 userId: locker.userId,
                 lockerId: locker._id,
                 actor: "system",
                 action,
                 success: action !== "INVALID_CODE",
-                details: action
+                details
             });
 
             return NextResponse.json({ ok: true });

@@ -68,6 +68,7 @@ interface AuditLogItem {
   date: string;
   time: string;
   event: string;
+  details: string;
 }
 
 const navItems = [
@@ -310,8 +311,6 @@ export default function ActivityPage() {
 
     return {
       id: `return-${log._id}`,
-      logId: log._id,
-
       trackingNumber:
         returnItems.length > 0
           ? returnItems.join(", ")
@@ -347,18 +346,50 @@ export default function ActivityPage() {
 
   const formatLogEvent = (log: Log) => {
     switch (log.action) {
-      case "PIN_VALID": return "Valid PIN Entered";
-      case "INVALID_CODE": return "Invalid PIN Attempt";
-      case "PIN_LOCKOUT": return "Lockout Activated";
-      case "PIN_RESET": return "Lockout Reset";
-      case "LOCK_OPEN": return "Locker Opened";
-      case "LOCK_CLOSED": return "Locker Closed";
+      case "PIN_VALID":
+        return "Valid Owner PIN Entered";
+
+      case "INVALID_CODE":
+        return "Invalid Code Attempt";
+
+      case "PIN_LOCKOUT":
+        return "PIN Lockout Activated";
+
+      case "PIN_RESET":
+        return "PIN Lockout Reset";
+
+      case "LOCK_OPEN":
+        return "Locker Opened";
+
+      case "LOCK_CLOSED":
+        return "Locker Closed";
+
       case "DELIVERY_VALID":
+        return "Tracking Number Verified";
+
       case "DELIVERY_SUCCESS":
-        return "Parcel Delivered";
-      case "RETRIEVE": return "Parcel Retrieved";
-      case "LID_OPEN_TOO_LONG": return "Locker Left Open";
-      default: return null;
+        return "Delivery Completed";
+
+      case "RETRIEVE":
+        return "Retrieval Completed";
+
+      case "RETURN_OTP_VALID":
+        return "Return OTP Verified";
+
+      case "RETURN_OTP_INVALID":
+        return "Invalid Return OTP";
+
+      case "RETURN_DEPOSITED":
+        return "Return Deposited";
+
+      case "RETURN_PICKUP_SUCCESS":
+        return "Return Pickup Completed";
+
+      case "LID_OPEN_TOO_LONG":
+        return "Locker Left Open";
+
+      default:
+        return null;
     }
   };
 
@@ -372,6 +403,7 @@ export default function ActivityPage() {
           date: formatDate(log.timestamp),
           time: formatTime(log.timestamp),
           event,
+          details: log.details || "—",
         };
       })
       .filter(Boolean) as AuditLogItem[];
@@ -420,7 +452,16 @@ export default function ActivityPage() {
     if (auditFilter === "ALL") return true;
     if (auditFilter === "PIN") return log.event.toLowerCase().includes("pin");
     if (auditFilter === "LOCK") return log.event.toLowerCase().includes("lock");
-    if (auditFilter === "PARCEL") return log.event.toLowerCase().includes("parcel");
+    if (auditFilter === "PARCEL") {
+      const event = log.event.toLowerCase();
+
+      return (
+        event.includes("tracking") ||
+        event.includes("delivery") ||
+        event.includes("retrieval") ||
+        event.includes("return")
+      );
+    }
     if (auditFilter === "SECURITY") {
       return log.event.toLowerCase().includes("failed") || log.event.toLowerCase().includes("lockout");
     }
@@ -682,10 +723,11 @@ export default function ActivityPage() {
                     </div>
                   </div>
 
-                  <div className="mb-3 grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-2xl bg-white/10 border border-white/10 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/70">
+                  <div className="mb-3 grid grid-cols-[1fr_0.7fr_1.4fr_2fr] gap-3 rounded-2xl bg-white/10 border border-white/10 px-5 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-white/70">
                     <p>Date</p>
                     <p>Time</p>
                     <p>Event</p>
+                    <p>Details</p>
                   </div>
 
                   <div className={`flex-1 min-h-0 space-y-3 overflow-y-auto pr-1 ${scrollbarClass}`}>
@@ -705,11 +747,17 @@ export default function ActivityPage() {
                         <div
                           key={log.id}
                           style={{ animationDelay: `${index * 50}ms` }}
-                          className="group grid grid-cols-[1.1fr_0.75fr_2fr] gap-3 rounded-3xl bg-white/15 p-5 border border-white/10 text-white hover:bg-white/25 transition-all duration-300 animate-slide-up"
+                          className="group grid grid-cols-[1fr_0.7fr_1.4fr_2fr] gap-3 rounded-3xl bg-white/15 p-5 border border-white/10 text-white hover:bg-white/25 transition-all duration-300 animate-slide-up"
                         >
                           <p className="text-sm font-medium text-white/80">{log.date}</p>
                           <p className="text-sm font-medium text-white/80">{log.time}</p>
                           <p className="text-sm font-semibold truncate">{log.event}</p>
+                          <p
+                            className="text-sm font-medium text-white/60 truncate"
+                            title={log.details}
+                          >
+                            {log.details}
+                          </p>
                         </div>
                       ))
                     )}
