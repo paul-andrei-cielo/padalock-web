@@ -27,12 +27,13 @@ const ReturnSchema = new mongoose.Schema({
         type: String,
         enum: [
         "PENDING",
+        "READY_FOR_PICKUP",
         "OTP_ACTIVE",
         "PICKUP_ACTIVE",
         "PICKED_UP",
         "EXPIRED",
         "CANCELLED"
-        ],
+    ],
         default: "PENDING"
     },
     pickedUpDate: {

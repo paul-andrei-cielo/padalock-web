@@ -17,22 +17,23 @@ import mongoose, { models } from "mongoose";
       required: true
     },
     action: {
-    type: String,
-    enum: [
-    'PIN_VALID',
-    'INVALID_CODE',
-    'PIN_LOCKOUT',
-    'PIN_RESET',
-    'LOCK_OPEN',
-    'LOCK_CLOSED',
-    'DELIVERY_VALID',
-    'DELIVERY_SUCCESS',
-    'RETRIEVE',
-    'RETURN_OTP_INVALID',
-    'RETURN_PICKUP_SUCCESS',
-  ],
-    required: true
-  },
+      type: String,
+      enum: [
+        'PIN_VALID',
+        'INVALID_CODE',
+        'PIN_LOCKOUT',
+        'PIN_RESET',
+        'LOCK_OPEN',
+        'LOCK_CLOSED',
+        'DELIVERY_VALID',
+        'DELIVERY_SUCCESS',
+        'RETRIEVE',
+        'RETURN_OTP_INVALID',
+        'RETURN_DEPOSITED',
+        'RETURN_PICKUP_SUCCESS',
+      ],
+      required: true
+    },
     success: {
       type: Boolean,
       required: true

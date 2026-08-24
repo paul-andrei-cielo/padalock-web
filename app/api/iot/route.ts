@@ -285,6 +285,54 @@ export async function POST(req: NextRequest) {
 
 
         // ==========================================
+        // RETURN DEPOSIT CONFIRMATION
+        // Owner placed return parcel inside locker
+        // ==========================================
+        if (action === "RETURN_DEPOSITED") {
+
+            const locker = await Locker.findOne({
+                code: lockerCode
+            });
+
+            if (!locker) {
+                return NextResponse.json(
+                    { error: "Locker not found" },
+                    { status: 404 }
+                );
+            }
+
+            const returnDoc = await Return.findOne({
+                lockerId: locker._id,
+                userId: locker.userId,
+                status: "PENDING"
+            }).sort({ createdAt: -1 });
+
+            if (!returnDoc) {
+                return NextResponse.json(
+                    { error: "No pending return found" },
+                    { status: 404 }
+                );
+            }
+
+            returnDoc.status = "READY_FOR_PICKUP";
+            await returnDoc.save();
+
+            await Log.create({
+                userId: locker.userId,
+                lockerId: locker._id,
+                actor: "user",
+                action: "RETURN_DEPOSITED",
+                success: true,
+                details: `Return ${returnDoc._id} deposited in locker`
+            });
+
+            return NextResponse.json({
+                ok: true,
+                returnId: returnDoc._id
+            });
+}
+
+        // ==========================================
         // RETURN PHYSICAL PICKUP CONFIRMATION
         // ==========================================
         if (action === "RETURN_PICKED_UP") {

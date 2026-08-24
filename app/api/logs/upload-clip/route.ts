@@ -27,7 +27,9 @@ export async function POST(req: NextRequest) {
 
     if (
       eventType !== "DELIVERY" &&
-      eventType !== "RETRIEVE"
+      eventType !== "RETRIEVE" &&
+      eventType !== "RETURN_DEPOSIT" &&
+      eventType !== "RETURN_PICKUP"
     ) {
       return NextResponse.json(
         { error: "Invalid eventType" },
@@ -157,6 +159,54 @@ export async function POST(req: NextRequest) {
           sort: { createdAt: -1 },
           new: true,
         }
+      );
+    }
+
+    // RETURN DEPOSIT
+
+if (eventType === "RETURN_DEPOSIT") {
+  const updatedLog = await Log.findOneAndUpdate(
+    {
+      lockerId: locker._id,
+      userId: locker.userId,
+      action: "RETURN_DEPOSITED",
+    },
+    {
+      cameraRecording: playbackUrl,
+    },
+    {
+      sort: { createdAt: -1 },
+      new: true,
+    }
+  );
+
+  console.log(
+    "RETURN DEPOSIT CLIP LOG UPDATE:",
+    updatedLog
+  );
+}
+
+    // RETURN PICKUP
+
+    if (eventType === "RETURN_PICKUP") {
+      const updatedLog = await Log.findOneAndUpdate(
+        {
+          lockerId: locker._id,
+          userId: locker.userId,
+          action: "RETURN_PICKUP_SUCCESS",
+        },
+        {
+          cameraRecording: playbackUrl,
+        },
+        {
+          sort: { createdAt: -1 },
+          new: true,
+        }
+      );
+
+      console.log(
+        "RETURN PICKUP CLIP LOG UPDATE:",
+        updatedLog
       );
     }
 

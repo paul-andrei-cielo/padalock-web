@@ -98,15 +98,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
 
         if (action === "generate_otp") {
-            if (returnDoc.status === "PICKED_UP") {
+
+            if (
+                returnDoc.status !== "READY_FOR_PICKUP" &&
+                returnDoc.status !== "OTP_ACTIVE"
+            ) {
                 return NextResponse.json({
-                    error: "This return has already been picked up"
+                    error: "Return parcel must be deposited in the locker before generating an OTP"
                 }, { status: 400 });
             }
 
             returnDoc.otp = generateOtp();
-            returnDoc.otpExpiry = new Date(Date.now() + OTP_VALID_MINUTES * 60 * 1000);
+            returnDoc.otpExpiry =
+                new Date(
+                    Date.now() +
+                    OTP_VALID_MINUTES * 60 * 1000
+                );
+
             returnDoc.status = "OTP_ACTIVE";
+
             await returnDoc.save();
 
             return NextResponse.json({
