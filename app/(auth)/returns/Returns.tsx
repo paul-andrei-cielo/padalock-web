@@ -619,9 +619,7 @@ export default function ReturnsPage() {
                       ret.status === "OTP_ACTIVE" ||
                       ret.status === "EXPIRED";
 
-                    const canDelete =
-                      ret.status !== "PICKED_UP" &&
-                      ret.status !== "CANCELLED";
+                    const canDelete = true;
 
                     const isOtpVisible =
                       expandedOtpId === ret._id;
@@ -686,9 +684,7 @@ export default function ReturnsPage() {
                                     )
                                   }
                                   className="text-lg text-white/60 hover:text-red-300 hover:scale-125 transition-all"
-                                  aria-label={`Delete return for ${displayItems.join(
-                                    ", "
-                                  )}`}
+                                  aria-label={`Delete return for ${displayItems.join(", ")}`}
                                 >
                                   🗑
                                 </button>

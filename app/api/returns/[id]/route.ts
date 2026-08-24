@@ -2,6 +2,8 @@ import { getUserFromRequest } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import Return from "@/models/Return";
 import { NextRequest, NextResponse } from "next/server";
+import Log from "@/models/Log";
+import cloudinary from "@/lib/cloudinary";
 
 const OTP_VALID_MINUTES = 1440;
 
@@ -9,33 +11,127 @@ function generateOtp(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
         const { id } = await params;
 
         await connectDB();
+
         const user = getUserFromRequest(req);
 
         if (!user?.userId) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
         }
 
-        const returnDoc = await Return.findOneAndDelete({
+        const returnDoc = await Return.findOne({
             _id: id,
             userId: user.userId
         });
 
         if (!returnDoc) {
-            return NextResponse.json({
-                error: "Return not found or doesn't belong to you"
-            }, { status: 404 });
+            return NextResponse.json(
+                {
+                    error:
+                        "Return not found or doesn't belong to you"
+                },
+                { status: 404 }
+            );
         }
 
-        return NextResponse.json({ message: "Return deleted successfully" });
-    } catch (error: any) {
+        const returnLogs = await Log.find({
+            userId: user.userId,
+            action: "RETURN_PICKUP_SUCCESS",
+            details: {
+                $regex: `Return ${id} picked up`
+            }
+        });
+
+        for (const log of returnLogs) {
+            if (!log.cameraRecording) {
+                continue;
+            }
+
+            try {
+                const url = new URL(
+                    log.cameraRecording
+                );
+
+                const uploadIndex =
+                    url.pathname.indexOf(
+                        "/upload/"
+                    );
+
+                if (uploadIndex >= 0) {
+                    let publicPath =
+                        url.pathname.substring(
+                            uploadIndex + 8
+                        );
+
+                    publicPath =
+                        publicPath.replace(
+                            /^v\d+\//,
+                            ""
+                        );
+
+                    publicPath =
+                        publicPath.replace(
+                            /\.mp4$/,
+                            ""
+                        );
+
+                    await cloudinary.uploader.destroy(
+                        publicPath,
+                        {
+                            resource_type: "video"
+                        }
+                    );
+                }
+            } catch (cloudinaryError) {
+                console.error(
+                    "Failed to delete return clip:",
+                    cloudinaryError
+                );
+            }
+        }
+
+        await Log.deleteMany({
+            userId: user.userId,
+            action: "RETURN_PICKUP_SUCCESS",
+            details: {
+                $regex: `Return ${id} picked up`
+            }
+        });
+
+        await Return.deleteOne({
+            _id: id,
+            userId: user.userId
+        });
+
         return NextResponse.json({
-            error: "Failed to delete: " + error.message
-        }, { status: 500 });
+            message:
+                "Return deleted successfully"
+        });
+
+    } catch (error: any) {
+        console.error(
+            "Delete return error:",
+            error
+        );
+
+        return NextResponse.json(
+            {
+                error:
+                    "Failed to delete return: " +
+                    error.message
+            },
+            { status: 500 }
+        );
     }
 }
 

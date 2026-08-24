@@ -52,7 +52,6 @@ interface Locker {
 
 interface ActivityItem {
   id: string;
-  logId?: string;
   trackingNumber: string;
   status: ParcelStatus;
   date: string;
@@ -186,54 +185,6 @@ export default function ActivityPage() {
       setLogsLoading(false);
     }
   };
-
-  const handleDeleteActivity = async (
-  logId: string
-) => {
-  const confirmed = window.confirm(
-    "Delete this return activity and its video clip?"
-  );
-
-  if (!confirmed) return;
-
-  try {
-    const token =
-      localStorage.getItem("token");
-
-    if (!token) return;
-
-    const res = await fetch(LOGS_API, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        id: logId,
-      }),
-    });
-
-    if (!res.ok) {
-      const data =
-        await res.json().catch(() => ({}));
-
-      throw new Error(
-        data.error ||
-        "Failed to delete activity"
-      );
-    }
-
-    await fetchLogs();
-
-  } catch (err) {
-    console.error(
-      "Delete activity error:",
-      err
-    );
-
-    alert("Failed to delete activity");
-  }
-};
 
   const fetchLocker = async () => {
     try {
@@ -696,16 +647,6 @@ export default function ActivityPage() {
                                   }
                                 >
                                   {item.status === "RETURN_PICKUP" ? "↩️📹" : "🔓📹"}
-                                </button>
-                              )}
-                              {item.status === "RETURN_PICKUP" && item.logId && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteActivity(item.logId!)}
-                                  className="bg-white/10 hover:bg-red-500/80 text-white px-3 py-2 rounded-xl transition-all duration-300 active:scale-90"
-                                  title="Delete Return Activity"
-                                >
-                                  🗑️
                                 </button>
                               )}
                             </div>

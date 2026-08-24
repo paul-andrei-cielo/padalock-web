@@ -11,18 +11,27 @@ export async function GET(req: NextRequest) {
 
         const user = getUserFromRequest(req);
 
+        if (!user?.userId) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
         const returns = await Return.find({
             userId: user.userId
-        }).lean();
+        })
+        .sort({ createdAt: -1 })
+        .lean();
 
         return NextResponse.json(returns);
 
     } catch (error) {
-        console.error(error);
+        console.error("Fetch returns error:", error);
 
         return NextResponse.json(
-            { error: "Unauthorized" },
-            { status: 400 }
+            { error: "Failed to fetch returns" },
+            { status: 500 }
         );
     }
 }
