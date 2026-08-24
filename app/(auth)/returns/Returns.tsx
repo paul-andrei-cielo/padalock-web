@@ -6,8 +6,9 @@ import { useState, useEffect } from "react";
 
 interface Return {
   _id: string;
-  parcelCount: number;
-  items: string[];
+  parcelCount?: number;
+  items?: string[];
+  itemDescription?: string;
   otp: string | null;
   otpExpiry: string | null;
   status: string;
@@ -540,6 +541,13 @@ export default function ReturnsPage() {
                   </div>
                 ) : filteredReturns.length > 0 ? (
                   filteredReturns.map((ret) => {
+                    const displayItems =
+                      ret.items && ret.items.length > 0
+                        ? ret.items
+                        : [ret.itemDescription || "Parcel"];
+
+                    const displayParcelCount =
+                      ret.parcelCount || displayItems.length;
                     const expired =
                       ret.status === "OTP_ACTIVE" && isOtpExpired(ret.otpExpiry);
                     const effectiveStatus = expired ? "EXPIRED" : ret.status;
@@ -566,11 +574,11 @@ export default function ReturnsPage() {
                           <div className="flex-1 min-w-0">
                             <div>
                               <h3 className="text-lg font-bold text-white">
-                                {ret.parcelCount} {ret.parcelCount === 1 ? "Parcel" : "Parcels"}
+                                {displayParcelCount} {displayParcelCount === 1 ? "Parcel" : "Parcels"}
                               </h3>
 
                               <div className="mt-1 space-y-1">
-                                {ret.items.map((item, index) => (
+                                {displayItems.map((item, index) => (
                                   <p
                                     key={index}
                                     className="text-sm text-white/70 break-words"
@@ -604,11 +612,11 @@ export default function ReturnsPage() {
                                   onClick={() =>
                                     handleDelete(
                                       ret._id,
-                                      ret.items.join(", ")
+                                      displayItems.join(", ")
                                     )
                                   }
                                   className="text-lg text-white/60 hover:text-red-300 hover:scale-125 transition-all"
-                                  aria-label={`Delete return for ${ret.items.join(", ")}`}
+                                  aria-label={`Delete return for ${displayItems.join(", ")}`}
                                 >
                                   🗑
                                 </button>
