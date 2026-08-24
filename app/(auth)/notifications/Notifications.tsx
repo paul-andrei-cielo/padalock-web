@@ -125,16 +125,43 @@ export default function NotificationsPage() {
           let message = log.details || "New activity recorded";
 
           switch (log.action) {
-            case "DELIVERY_VALID":
+            case "DELIVERY_SUCCESS":
               type = "DELIVERED";
               title = "Parcel Delivered";
-              message = "A parcel was successfully delivered.";
+
+              const deliveryMatch = log.details?.match(
+                /Parcel (.+?) delivered/i
+              );
+
+              message = deliveryMatch
+                ? `Parcel #${deliveryMatch[1]} was successfully delivered.`
+                : "A parcel was successfully delivered.";
               break;
 
             case "RETRIEVE":
               type = "RETRIEVED";
               title = "Parcel Retrieved";
-              message = "A parcel was retrieved from the locker.";
+
+              const retrieveMatch = log.details?.match(
+                /Parcels retrieved:\s*(.+)/i
+              );
+
+              message = retrieveMatch
+                ? `Parcel #${retrieveMatch[1]} was retrieved from the locker.`
+                : "A parcel was retrieved from the locker.";
+              break;
+
+            case "RETURN_PICKUP_SUCCESS":
+              type = "RETRIEVED";
+              title = "Return Picked Up";
+
+              if (log.returnInfo?.items?.length) {
+                message = `${log.returnInfo.items.join(", ")} ${
+                  log.returnInfo.parcelCount === 1 ? "was" : "were"
+                } picked up for return.`;
+              } else {
+                message = "Your return was picked up from the locker.";
+              }
               break;
 
             case "INVALID_CODE":
@@ -146,8 +173,7 @@ export default function NotificationsPage() {
             case "PIN_LOCKOUT":
               type = "FAILED_PIN";
               title = "Locker Lockout";
-              message =
-                "Too many incorrect PIN attempts were detected.";
+              message = "Too many incorrect PIN attempts were detected.";
               break;
 
             case "LID_OPEN_TOO_LONG":
