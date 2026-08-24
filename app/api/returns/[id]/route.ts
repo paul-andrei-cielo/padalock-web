@@ -39,7 +39,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
         const { id } = await params;
         const body = await req.json();
@@ -48,32 +51,79 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const user = getUserFromRequest(req);
 
         if (!user?.userId) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
         }
 
-        const { itemDescription } = body;
+        const { parcelCount, items } = body;
 
-        const updatedReturn = await Return.findOneAndUpdate(
-            { _id: id, userId: user.userId, status: "PENDING" },
-            { itemDescription: itemDescription?.trim() || "Parcel" },
-            { new: true, runValidators: true }
-        );
+        if (
+            !Number.isInteger(parcelCount) ||
+            parcelCount < 1 ||
+            !Array.isArray(items) ||
+            items.length !== parcelCount ||
+            items.some(
+                (item) =>
+                    typeof item !== "string" ||
+                    !item.trim()
+            )
+        ) {
+            return NextResponse.json(
+                {
+                    error:
+                        "Parcel count must match the number of item descriptions"
+                },
+                { status: 400 }
+            );
+        }
+
+        const updatedReturn =
+            await Return.findOneAndUpdate(
+                {
+                    _id: id,
+                    userId: user.userId,
+                    status: "PENDING"
+                },
+                {
+                    parcelCount,
+                    items: items.map(
+                        (item: string) => item.trim()
+                    )
+                },
+                {
+                    new: true,
+                    runValidators: true
+                }
+            );
 
         if (!updatedReturn) {
-            return NextResponse.json({
-                error: "Return not found, doesn't belong to you, or is no longer editable"
-            }, { status: 404 });
+            return NextResponse.json(
+                {
+                    error:
+                        "Return not found, doesn't belong to you, or is no longer editable"
+                },
+                { status: 404 }
+            );
         }
 
         return NextResponse.json({
             message: "Return updated successfully",
             return: updatedReturn
         });
+
     } catch (error: any) {
         console.error("Update return error:", error);
-        return NextResponse.json({
-            error: "Failed to update return: " + error.message
-        }, { status: 500 });
+
+        return NextResponse.json(
+            {
+                error:
+                    "Failed to update return: " +
+                    error.message
+            },
+            { status: 500 }
+        );
     }
 }
 

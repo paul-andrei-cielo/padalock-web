@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Find the locker actually assigned to this user
         const locker = await Locker.findOne({
             userId: user.userId
         });
@@ -52,16 +51,40 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { itemDescription } = await req.json();
+        const { parcelCount, items } = await req.json();
+
+        if (
+            !Number.isInteger(parcelCount) ||
+            parcelCount < 1 ||
+            !Array.isArray(items) ||
+            items.length !== parcelCount ||
+            items.some(
+                (item) =>
+                    typeof item !== "string" ||
+                    !item.trim()
+            )
+        ) {
+            return NextResponse.json(
+                {
+                    error:
+                        "Parcel count must match the number of item descriptions"
+                },
+                { status: 400 }
+            );
+        }
 
         const returnDoc = await Return.create({
             userId: user.userId,
             lockerId: locker._id,
-            itemDescription: itemDescription?.trim() || "Parcel",
+            parcelCount,
+            items: items.map(
+                (item: string) => item.trim()
+            ),
             status: "PENDING"
         });
 
         return NextResponse.json(returnDoc);
+
     } catch (error) {
         console.error("Create return error:", error);
 

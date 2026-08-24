@@ -6,7 +6,8 @@ import { useState, useEffect } from "react";
 
 interface Return {
   _id: string;
-  itemDescription: string;
+  parcelCount: number;
+  items: string[];
   otp: string | null;
   otpExpiry: string | null;
   status: string;
@@ -44,7 +45,8 @@ export default function ReturnsPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   const [returns, setReturns] = useState<Return[]>([]);
-  const [itemDescription, setItemDescription] = useState("");
+  const [parcelCount, setParcelCount] = useState(1);
+  const [items, setItems] = useState<string[]>([""]);  
   const [loading, setLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(false);
   const [activeFilter, setActiveFilter] = useState("ALL");
@@ -100,45 +102,51 @@ export default function ReturnsPage() {
     }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
+ const handleCreate = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (!itemDescription.trim()) {
-      setError("Please enter an item description");
-      return;
+  if (
+    items.length !== parcelCount ||
+    items.some((item) => !item.trim())
+  ) {
+    setError("Please enter a description for every parcel");
+    return;
+  }
+
+  setLoading(true);
+  setError("");
+
+  try {
+    const token = localStorage.getItem("token")!;
+
+    const res = await fetch(API_BASE, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        parcelCount,
+        items: items.map((item) => item.trim()),
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to create return");
     }
 
-    setLoading(true);
-    setError("");
+    setParcelCount(1);
+    setItems([""]);
 
-    try {
-      const token = localStorage.getItem("token")!;
-
-      const res = await fetch(API_BASE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          itemDescription: itemDescription.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "Failed to create return");
-      }
-
-      setItemDescription("");
-      await fetchReturns();
-    } catch (err: any) {
-      console.error("Error creating return:", err);
-      setError(err.message || "Failed to create return");
-    } finally {
-      setLoading(false);
-    }
-  };
+    await fetchReturns();
+  } catch (err: any) {
+    console.error("Error creating return:", err);
+    setError(err.message || "Failed to create return");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleGenerateOtp = async (returnId: string) => {
     try {
@@ -412,20 +420,64 @@ export default function ReturnsPage() {
             <form className="space-y-4" onSubmit={handleCreate}>
               <div>
                 <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
-                  Item Description
+                  Number of Parcels
                 </label>
-                <input
-                  id="itemDescription"
-                  type="text"
-                  placeholder="e.g. Birthday Gift"
-                  className="w-full h-14 rounded-3xl bg-white/20 border border-white/30 px-6 text-white placeholder:text-white/30 outline-none focus:bg-white/30 focus:scale-[1.01] transition-all duration-300"
-                  value={itemDescription}
-                  onChange={(e) => setItemDescription(e.target.value)}
+
+                <select
+                  value={parcelCount}
+                  onChange={(e) => {
+                    const count = Number(e.target.value);
+
+                    setParcelCount(count);
+
+                    setItems((current) =>
+                      Array.from(
+                        { length: count },
+                        (_, index) => current[index] || ""
+                      )
+                    );
+                  }}
                   disabled={loading}
-                  required
-                  autoComplete="off"
-                />
+                  className="w-full h-14 rounded-3xl bg-white/20 border border-white/30 px-6 text-white outline-none focus:bg-white/30 transition-all duration-300"
+                >
+                  {[1, 2, 3, 4, 5].map((count) => (
+                    <option
+                      key={count}
+                      value={count}
+                      className="text-black"
+                    >
+                      {count}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {items.map((item, index) => (
+                <div key={index}>
+                  <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
+                    Parcel {index + 1} Description
+                  </label>
+
+                  <input
+                    type="text"
+                    placeholder={
+                      index === 0
+                        ? "e.g. Birthday Gift"
+                        : "e.g. Shampoo"
+                    }
+                    className="w-full h-14 rounded-3xl bg-white/20 border border-white/30 px-6 text-white placeholder:text-white/30 outline-none focus:bg-white/30 focus:scale-[1.01] transition-all duration-300"
+                    value={item}
+                    onChange={(e) => {
+                      const updatedItems = [...items];
+                      updatedItems[index] = e.target.value;
+                      setItems(updatedItems);
+                    }}
+                    disabled={loading}
+                    required
+                    autoComplete="off"
+                  />
+                </div>
+              ))}
 
               <p className="text-[11px] text-white/50 ml-4 leading-relaxed">
                 Place the item in your locker first, then create a return
@@ -435,7 +487,10 @@ export default function ReturnsPage() {
 
               <button
                 type="submit"
-                disabled={loading || !itemDescription.trim()}
+                disabled={
+                  loading ||
+                  items.some((item) => !item.trim())
+                }
                 className="w-full h-14 mt-2 rounded-3xl bg-[#df4473] text-white font-black uppercase tracking-[0.2em] shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? "Processing..." : "Create Return"}
@@ -509,9 +564,22 @@ export default function ReturnsPage() {
                       >
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-white break-words">
-                              {ret.itemDescription}
-                            </h3>
+                            <div>
+                              <h3 className="text-lg font-bold text-white">
+                                {ret.parcelCount} {ret.parcelCount === 1 ? "Parcel" : "Parcels"}
+                              </h3>
+
+                              <div className="mt-1 space-y-1">
+                                {ret.items.map((item, index) => (
+                                  <p
+                                    key={index}
+                                    className="text-sm text-white/70 break-words"
+                                  >
+                                    {index + 1}. {item}
+                                  </p>
+                                ))}
+                              </div>
+                            </div>
                             <p className="mt-1 text-[11px] text-white/40">
                               Created: {formatDate(ret.createdAt)}
                               {ret.status === "PICKED_UP" && (
@@ -534,10 +602,13 @@ export default function ReturnsPage() {
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    handleDelete(ret._id, ret.itemDescription)
+                                    handleDelete(
+                                      ret._id,
+                                      ret.items.join(", ")
+                                    )
                                   }
                                   className="text-lg text-white/60 hover:text-red-300 hover:scale-125 transition-all"
-                                  aria-label={`Delete return for ${ret.itemDescription}`}
+                                  aria-label={`Delete return for ${ret.items.join(", ")}`}
                                 >
                                   🗑
                                 </button>
