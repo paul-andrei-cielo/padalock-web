@@ -26,6 +26,12 @@ const filterTabs = ["ALL", "PENDING", "OTP_ACTIVE", "PICKED_UP"];
 
 const statusColors: Record<string, { bg: string; text: string }> = {
   PENDING: { bg: "bg-[#edd9cb]", text: "text-[#d46800]" },
+
+  READY_FOR_PICKUP: {
+    bg: "bg-[#cfe8ec]",
+    text: "text-[#1383a3]"
+  },
+
   OTP_ACTIVE: { bg: "bg-[#f5d9e8]", text: "text-[#df4473]" },
   PICKED_UP: { bg: "bg-[#b8d8c7]", text: "text-[#0d7a43]" },
   EXPIRED: { bg: "bg-[#e3c4c4]", text: "text-[#a33a3a]" },
@@ -197,14 +203,22 @@ export default function ReturnsPage() {
     switch (status) {
       case "PENDING":
         return "Pending";
+
+      case "READY_FOR_PICKUP":
+        return "Ready for Pickup";
+
       case "OTP_ACTIVE":
         return "OTP Active";
+
       case "PICKED_UP":
         return "Picked Up";
+
       case "EXPIRED":
         return "Expired";
+
       case "CANCELLED":
         return "Cancelled";
+
       default:
         return status;
     }
@@ -481,7 +495,7 @@ export default function ReturnsPage() {
                       };
 
                     const canGenerateOtp =
-                      ret.status === "PENDING" ||
+                      ret.status === "READY_FOR_PICKUP" ||
                       ret.status === "OTP_ACTIVE" ||
                       ret.status === "EXPIRED";
                     const canDelete =
