@@ -617,6 +617,7 @@ export default function ReturnsPage() {
                       };
 
                     const canGenerateOtp =
+                      ret.status === "PENDING" ||
                       ret.status === "READY_FOR_PICKUP" ||
                       ret.status === "OTP_ACTIVE" ||
                       ret.status === "EXPIRED";
