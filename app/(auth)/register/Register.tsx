@@ -233,7 +233,7 @@ export default function RegisterPage() {
   };
 
   const filteredParcels = parcels.filter((parcel) => {
-    if (activeFilter === "All") return true;
+    if (activeFilter.toUpperCase() === "ALL") return true;
     return parcel.status === activeFilter.toUpperCase();
   });
 
