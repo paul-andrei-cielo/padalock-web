@@ -501,32 +501,34 @@ export default function ReturnsPage() {
                 </select>
               </div>
 
-              {items.map((item, index) => (
-                <div key={index}>
-                  <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
-                    Parcel {index + 1} Description
-                  </label>
+              <div className="max-h-64 overflow-y-auto pr-1 space-y-4 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+                {items.map((item, index) => (
+                  <div key={index}>
+                    <label className="text-[10px] font-black text-white/60 uppercase tracking-widest ml-4 mb-2 block">
+                      Parcel {index + 1} Description
+                    </label>
 
-                  <input
-                    type="text"
-                    placeholder={
-                      index === 0
-                        ? "e.g. Birthday Gift"
-                        : "e.g. Shampoo"
-                    }
-                    className="w-full h-14 rounded-3xl bg-white/20 border border-white/30 px-6 text-white placeholder:text-white/30 outline-none focus:bg-white/30 focus:scale-[1.01] transition-all duration-300"
-                    value={item}
-                    onChange={(e) => {
-                      const updatedItems = [...items];
-                      updatedItems[index] = e.target.value;
-                      setItems(updatedItems);
-                    }}
-                    disabled={loading}
-                    required
-                    autoComplete="off"
-                  />
-                </div>
-              ))}
+                    <input
+                      type="text"
+                      placeholder={
+                        index === 0
+                          ? "e.g. Birthday Gift"
+                          : "e.g. Shampoo"
+                      }
+                      className="w-full h-14 rounded-3xl bg-white/20 border border-white/30 px-6 text-white placeholder:text-white/30 outline-none focus:bg-white/30 focus:scale-[1.01] transition-all duration-300"
+                      value={item}
+                      onChange={(e) => {
+                        const updatedItems = [...items];
+                        updatedItems[index] = e.target.value;
+                        setItems(updatedItems);
+                      }}
+                      disabled={loading}
+                      required
+                      autoComplete="off"
+                    />
+                  </div>
+                ))}
+              </div>
 
               <p className="text-[11px] text-white/50 ml-4 leading-relaxed">
                 Place the item in your locker first, then create a return
