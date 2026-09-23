@@ -2,6 +2,7 @@ import { connectDB } from "@/lib/mongodb";
 import Parcel from "@/models/Parcel";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
+import Locker from "@/models/Locker";
 
 export async function GET(req: NextRequest) {
     try {
@@ -32,7 +33,18 @@ export async function POST(req: NextRequest) {
 
         const user = getUserFromRequest(req);
 
-        if (!user.lockerId) {
+        if (!user) {
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
+        }
+
+        const locker = await Locker.findOne({
+            userId: user.userId
+        });
+
+        if (!locker) {
             return NextResponse.json(
                 { error: "No locker assigned to your account" },
                 { status: 400 }
