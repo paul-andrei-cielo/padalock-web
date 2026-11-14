@@ -1,26 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { AlertTriangle, Check } from "lucide-react";
+
+/* ---------- Shared Padalock styles (same as the rest of the app) ---------- */
+
+const glass =
+  "relative rounded-[2rem] border border-white/35 bg-[#a82452]/60 backdrop-blur-xl " +
+  "shadow-[0_8px_32px_rgba(120,20,55,0.25),inset_0_1px_0_rgba(255,255,255,0.25)]";
+
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8789b]";
+
+const inputClass =
+  "w-full h-12 rounded-full border border-white/35 bg-white/15 px-5 text-white placeholder:text-white/60 " +
+  "outline-none transition focus:border-white/70 focus:bg-white/25 disabled:opacity-60";
+
+const primaryButton = `flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white px-6 text-base font-bold text-[#8a1a42] shadow-lg transition hover:bg-pink-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
+
+const pageBg =
+  "bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.28),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.35),transparent_50%),linear-gradient(180deg,#df4473_0%,#e8789b_50%,#ee94ae_100%)]";
+
+/* ---------- Page ---------- */
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-
-  // Animation state
-  const [introComplete, setIntroComplete] = useState(false);
-
-  useEffect(() => {
-    // Keep the logo centered briefly before starting the animation.
-    const timer = setTimeout(() => {
-      setIntroComplete(true);
-    }, 700);
-
-    return () => clearTimeout(timer);
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,220 +67,111 @@ export default function ForgotPassword() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-t from-[#f6f2f4] via-[#efc7d3] to-[#df4f7d] lg:bg-gradient-to-b lg:from-[#f6f2f4] lg:via-[#efc7d3] lg:to-[#df4f7d] px-6 py-10 md:px-12 lg:px-16 flex items-center justify-center transition-colors duration-500">
+    <main
+      className={`pl-fade flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 md:px-10 lg:px-16 ${pageBg}`}
+    >
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-10 lg:flex-row lg:gap-16">
+        {/* BRANDING */}
+        <section className="flex flex-1 flex-col items-center text-center text-white lg:items-start lg:text-left">
+          <Image
+            src="/padalock-logo.png"
+            alt="Padalock"
+            width={390}
+            height={90}
+            priority
+            className="pl-rise w-48 object-contain drop-shadow-md md:w-64 lg:w-[390px]"
+          />
 
-      {/* ========================================================= */}
-      {/* CENTER LOGO INTRO                                         */}
-      {/* ========================================================= */}
-
-      <div
-        className={`
-          pointer-events-none fixed inset-0 z-50
-          flex items-center justify-center
-          transition-all duration-[1400ms]
-          ease-[cubic-bezier(0.22,1,0.36,1)]
-          ${
-            introComplete
-              ? "opacity-0"
-              : "opacity-100"
-          }
-        `}
-      >
-        <Image
-          src="/padalock-logo.png"
-          alt="PadaLock Logo"
-          width={390}
-          height={90}
-          priority
-          className={`
-            w-64 md:w-80 lg:w-[390px]
-            object-contain
-            drop-shadow-[0_10px_30px_rgba(0,0,0,0.12)]
-            transition-all
-            duration-[1400ms]
-            ease-[cubic-bezier(0.22,1,0.36,1)]
-            ${
-              introComplete
-                ? "scale-[0.49] opacity-0"
-                : "scale-100 opacity-100"
-            }
-          `}
-        />
-      </div>
-
-      {/* ========================================================= */}
-      {/* MAIN CONTENT                                               */}
-      {/* ========================================================= */}
-
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-12 lg:flex-row lg:gap-10">
-
-        {/* ========================================================= */}
-        {/* BRANDING SECTION                                          */}
-        {/* ========================================================= */}
-
-        <section
-          className={`
-            flex flex-col items-center text-center
-            lg:items-start lg:text-left
-            flex-1 text-white
-            transition-all
-            duration-1000
-            ease-out
-            ${
-              introComplete
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 -translate-x-8"
-            }
-          `}
-        >
-          <div className="mb-8 md:mb-12 lg:mb-16">
-
-            {/* Destination logo */}
-            <Image
-              src="/padalock-logo.png"
-              alt="PadaLock Logo"
-              width={300}
-              height={70}
-              priority
-              className={`
-                w-48 md:w-64 lg:w-[390px]
-                object-contain
-                drop-shadow-xl
-                transition-all
-                duration-[1200ms]
-                ease-[cubic-bezier(0.22,1,0.36,1)]
-                ${
-                  introComplete
-                    ? "opacity-100 scale-100"
-                    : "opacity-0 scale-95"
-                }
-              `}
-            />
-
-          </div>
-
-          {/* Heading */}
-          <div
-            className={`
-              max-w-md
-              transition-all
-              duration-1000
-              delay-300
-              ease-out
-              ${
-                introComplete
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-6"
-              }
-            `}
-          >
-            <h2 className="text-4xl font-black leading-[1.1] tracking-tight md:text-5xl lg:text-6xl">
+          <div className="pl-rise pl-d2 mt-8 max-w-md lg:mt-14">
+            <h1 className="text-4xl font-black leading-[1.1] tracking-tight md:text-5xl lg:text-6xl">
               Forgot your
               <br />
-              <span className="opacity-90">
-                password?
-              </span>
-            </h2>
+              password?
+            </h1>
           </div>
         </section>
 
-        {/* ========================================================= */}
-        {/* FORM CARD SECTION                                         */}
-        {/* ========================================================= */}
+        {/* FORM CARD */}
+        <section className="pl-rise pl-d3 w-full max-w-md md:max-w-lg">
+          <div className={`${glass} p-6 md:p-10`}>
+            <h2 className="mb-6 text-2xl font-bold text-white">Reset password</h2>
 
-        <section
-          className={`
-            w-full max-w-md md:max-w-lg lg:max-w-xl
-            transition-all
-            duration-1000
-            delay-500
-            ease-out
-            ${
-              introComplete
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-10"
-            }
-          `}
-        >
-          <div className="w-full rounded-[2.5rem] bg-white/40 p-8 md:p-12 shadow-[0_20px_60px_rgba(0,0,0,0.15)] backdrop-blur-xl border border-white/40">
-
-            <form
-              className="space-y-6"
-              onSubmit={handleSubmit}
-            >
-
+            <form className="space-y-5" onSubmit={handleSubmit}>
               {/* EMAIL */}
-              <div className="space-y-2">
+              <div>
                 <label
                   htmlFor="email"
-                  className="ml-2 block text-sm font-black uppercase tracking-widest text-[#df4473]"
+                  className="mb-1.5 block text-sm font-semibold text-white"
                 >
-                  Email Address
+                  Email
                 </label>
-
                 <input
                   id="email"
                   type="email"
+                  inputMode="email"
+                  autoComplete="email"
                   placeholder="user@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-14 w-full rounded-2xl border-2 border-white/50 bg-white/50 px-6 text-lg text-gray-800 outline-none placeholder:text-pink-300 focus:border-[#df4473] focus:bg-white transition-all shadow-inner"
+                  disabled={loading}
                   required
+                  className={inputClass}
                 />
               </div>
 
-              {/* BUTTON + MESSAGE */}
-              <div className="flex flex-col gap-6 pt-2">
+              {/* STATUS MESSAGE */}
+              {message &&
+                (isSuccess ? (
+                  <div
+                    role="status"
+                    className="pl-pop flex items-start gap-3 rounded-2xl border-2 border-[#7ee0b5] bg-[#5c0f2e] p-4"
+                  >
+                    <span className="mt-0.5 shrink-0 text-[#7ee0b5]">
+                      <Check size={18} />
+                    </span>
+                    <p className="text-sm font-semibold text-white">{message}</p>
+                  </div>
+                ) : (
+                  <div
+                    role="alert"
+                    className="pl-pop flex items-start gap-3 rounded-2xl border-2 border-[#ffc46b] bg-[#5c0f2e] p-4"
+                  >
+                    <span className="mt-0.5 shrink-0 text-[#ffc46b]">
+                      <AlertTriangle size={18} />
+                    </span>
+                    <p className="text-sm font-semibold text-white">{message}</p>
+                  </div>
+                ))}
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="h-14 w-full rounded-2xl bg-[#df4473] text-lg font-black uppercase tracking-widest text-white shadow-lg shadow-pink-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3"
-                >
+              {/* SUBMIT */}
+              <div className="space-y-5 pt-1">
+                <button type="submit" disabled={loading} className={primaryButton}>
                   {loading ? (
                     <>
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Sending Link
+                      <span
+                        className="h-5 w-5 animate-spin rounded-full border-2 border-[#8a1a42]/30 border-t-[#8a1a42]"
+                        aria-hidden
+                      />
+                      Sending link…
                     </>
                   ) : (
-                    "Send Reset Link"
+                    "Send reset link"
                   )}
                 </button>
 
-                {/* STATUS MESSAGE */}
-                {message && (
-                  <div
-                    className={`
-                      rounded-2xl p-4 text-center text-sm
-                      font-bold border
-                      animate-in fade-in zoom-in-95
-                      ${
-                        isSuccess
-                          ? "bg-green-500/10 text-green-600 border-green-500/20"
-                          : "bg-red-500/10 text-red-600 border-red-500/20"
-                      }
-                    `}
-                  >
-                    {message}
-                  </div>
-                )}
-
-                {/* BACK TO LOGIN */}
-                <p className="text-center text-sm font-bold text-gray-500 uppercase tracking-tight">
+                <p className="text-center text-sm text-white/90">
                   Remember your password?{" "}
                   <Link
                     href="/login"
-                    className="text-[#df4473] hover:underline"
+                    className={`rounded font-bold text-white underline underline-offset-4 ${focusRing}`}
                   >
-                    Back to login
+                    Back to log in
                   </Link>
                 </p>
-
               </div>
             </form>
           </div>
         </section>
-
       </div>
     </main>
   );

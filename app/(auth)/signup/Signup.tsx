@@ -1,9 +1,107 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AlertTriangle, Check, Eye, EyeOff } from "lucide-react";
+
+/* ---------- Shared Padalock styles (same as the rest of the app) ---------- */
+
+const glass =
+  "relative rounded-[2rem] border border-white/35 bg-[#a82452]/60 backdrop-blur-xl " +
+  "shadow-[0_8px_32px_rgba(120,20,55,0.25),inset_0_1px_0_rgba(255,255,255,0.25)]";
+
+const focusRing =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#e8789b]";
+
+const inputBase =
+  "w-full h-12 rounded-full border bg-white/15 px-5 text-white placeholder:text-white/60 " +
+  "outline-none transition focus:bg-white/25 disabled:opacity-60";
+
+const inputNeutral = "border-white/35 focus:border-white/70";
+
+const primaryButton = `flex h-12 w-full items-center justify-center gap-2 rounded-full bg-white px-6 text-base font-bold text-[#8a1a42] shadow-lg transition hover:bg-pink-50 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 ${focusRing}`;
+
+const pageBg =
+  "bg-[radial-gradient(ellipse_at_top_left,rgba(255,255,255,0.28),transparent_55%),radial-gradient(ellipse_at_bottom_right,rgba(255,255,255,0.35),transparent_50%),linear-gradient(180deg,#df4473_0%,#e8789b_50%,#ee94ae_100%)]";
+
+type MatchState = "match" | "mismatch" | "idle";
+
+const matchBorder: Record<MatchState, string> = {
+  match: "border-[#7ee0b5] focus:border-[#7ee0b5]",
+  mismatch: "border-[#ffc46b] focus:border-[#ffc46b]",
+  idle: inputNeutral,
+};
+
+/* ---------- Small components ---------- */
+
+function Field({
+  id,
+  label,
+  children,
+}: {
+  id: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-white">
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function PasswordInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  autoComplete,
+  disabled,
+  state = "idle",
+  describedBy,
+}: {
+  id: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder: string;
+  autoComplete: string;
+  disabled?: boolean;
+  state?: MatchState;
+  describedBy?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        id={id}
+        type={show ? "text" : "password"}
+        autoComplete={autoComplete}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        aria-describedby={describedBy}
+        aria-invalid={state === "mismatch" || undefined}
+        className={`${inputBase} ${matchBorder[state]} pr-14`}
+      />
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        aria-label={show ? "Hide password" : "Show password"}
+        className={`absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-white/90 hover:bg-white/15 ${focusRing}`}
+      >
+        {show ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  );
+}
+
+/* ---------- Page ---------- */
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
@@ -17,9 +115,6 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Animation state
-  const [introComplete, setIntroComplete] = useState(false);
-
   const router = useRouter();
 
   const passwordsMatch =
@@ -30,22 +125,18 @@ export default function SignupPage() {
     formData.confirmPassword.length > 0 &&
     formData.password !== formData.confirmPassword;
 
-  useEffect(() => {
-    // Keep the logo centered briefly before revealing the page.
-    const timer = setTimeout(() => {
-      setIntroComplete(true);
-    }, 700);
-
-    return () => clearTimeout(timer);
-  }, []);
+  const matchState: MatchState = passwordsDoNotMatch
+    ? "mismatch"
+    : passwordsMatch
+    ? "match"
+    : "idle";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     const nameRegex = /^[a-zA-ZÀ-ÿ\s'-]+$/;
-    const emailRegex =
-      /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
     if (!formData.firstName.trim()) {
       setError("First name is required.");
@@ -133,9 +224,7 @@ export default function SignupPage() {
     }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
       ...prev,
       [e.target.id]: e.target.value,
@@ -145,329 +234,167 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-gradient-to-t from-[#f6f2f4] via-[#efc7d3] to-[#df4f7d] lg:bg-gradient-to-b lg:from-[#f6f2f4] lg:via-[#efc7d3] lg:to-[#df4f7d] px-6 py-10 md:px-12 lg:px-16 flex items-center justify-center transition-colors duration-500">
+    <main
+      className={`pl-fade flex min-h-screen items-center justify-center overflow-hidden px-4 py-10 md:px-10 lg:px-16 ${pageBg}`}
+    >
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-10 lg:flex-row lg:gap-16">
+        {/* BRANDING */}
+        <section className="flex flex-1 flex-col items-center text-center text-white lg:items-start lg:text-left">
+          <Image
+            src="/padalock-logo.png"
+            alt="Padalock"
+            width={390}
+            height={90}
+            priority
+            className="pl-rise w-48 object-contain drop-shadow-md md:w-64 lg:w-[390px]"
+          />
 
-      {/* ========================================================= */}
-      {/* CENTER LOGO INTRO                                         */}
-      {/* ========================================================= */}
-
-      <div
-        className={`
-          pointer-events-none fixed inset-0 z-50
-          flex items-center justify-center
-          transition-all duration-[1400ms]
-          ease-[cubic-bezier(0.22,1,0.36,1)]
-          ${
-            introComplete
-              ? "opacity-0"
-              : "opacity-100"
-          }
-        `}
-      >
-        <Image
-          src="/padalock-logo.png"
-          alt="PadaLock Logo"
-          width={390}
-          height={90}
-          priority
-          className={`
-            w-64 md:w-80 lg:w-[390px]
-            object-contain
-            drop-shadow-[0_10px_30px_rgba(0,0,0,0.12)]
-            transition-all
-            duration-[1400ms]
-            ease-[cubic-bezier(0.22,1,0.36,1)]
-            ${
-              introComplete
-                ? "scale-[0.49] opacity-0"
-                : "scale-100 opacity-100"
-            }
-          `}
-        />
-      </div>
-
-      {/* ========================================================= */}
-      {/* MAIN CONTENT                                               */}
-      {/* ========================================================= */}
-
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-12 lg:flex-row lg:gap-10">
-
-        {/* ========================================================= */}
-        {/* LEFT SIDE: BRANDING                                      */}
-        {/* ========================================================= */}
-
-        <section
-          className={`
-            flex flex-col items-center text-center
-            lg:items-start lg:text-left
-            flex-1 text-white
-            transition-all
-            duration-1000
-            ease-out
-            ${
-              introComplete
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 -translate-x-8"
-            }
-          `}
-        >
-          <div className="mb-8 md:mb-12 lg:mb-16">
-
-            {/* Destination logo */}
-            <Image
-              src="/padalock-logo.png"
-              alt="PadaLock Logo"
-              width={300}
-              height={70}
-              priority
-              className={`
-                w-48 md:w-64 lg:w-[390px]
-                object-contain
-                drop-shadow-xl
-                transition-all
-                duration-[1200ms]
-                ease-[cubic-bezier(0.22,1,0.36,1)]
-                ${
-                  introComplete
-                    ? "opacity-100 scale-100"
-                    : "opacity-0 scale-95"
-                }
-              `}
-            />
-
-          </div>
-
-          <div
-            className={`
-              max-w-md
-              transition-all
-              duration-1000
-              delay-300
-              ease-out
-              ${
-                introComplete
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-6"
-              }
-            `}
-          >
-            <h2 className="text-4xl font-black leading-[1.1] tracking-tight md:text-5xl lg:text-6xl">
-              Create an
+          <div className="pl-rise pl-d2 mt-8 max-w-md lg:mt-14">
+            <h1 className="text-4xl font-black leading-[1.1] tracking-tight md:text-5xl lg:text-6xl">
+              Create
               <br />
-              <span className="opacity-90">
-                account
-              </span>
-            </h2>
+              an account
+            </h1>
           </div>
         </section>
 
-        {/* ========================================================= */}
-        {/* RIGHT SIDE: FORM CARD                                    */}
-        {/* ========================================================= */}
+        {/* FORM CARD */}
+        <section className="pl-rise pl-d3 w-full max-w-md md:max-w-lg">
+          <div className={`${glass} p-6 md:p-10`}>
+            <h2 className="mb-6 text-2xl font-bold text-white">Get started</h2>
 
-        <section
-          className={`
-            w-full max-w-md md:max-w-lg lg:max-w-xl
-            transition-all
-            duration-1000
-            delay-500
-            ease-out
-            ${
-              introComplete
-                ? "opacity-100 translate-x-0"
-                : "opacity-0 translate-x-10"
-            }
-          `}
-        >
-          <div className="w-full rounded-[2.5rem] bg-white/40 p-8 md:p-10 shadow-[0_20px_60px_rgba(0,0,0,0.15)] backdrop-blur-xl border border-white/40">
-
-            <form
-              className="space-y-5"
-              onSubmit={handleSubmit}
-            >
-
-              {/* ERROR */}
+            <form className="space-y-5" onSubmit={handleSubmit} noValidate>
               {error && (
-                <div className="rounded-2xl bg-red-500/10 p-4 text-center text-sm font-bold text-red-600 border border-red-500/20 animate-shake">
-                  {error}
+                <div
+                  role="alert"
+                  className="pl-pop flex items-start gap-3 rounded-2xl border-2 border-[#ffc46b] bg-[#5c0f2e] p-4"
+                >
+                  <span className="mt-0.5 shrink-0 text-[#ffc46b]">
+                    <AlertTriangle size={18} />
+                  </span>
+                  <p className="text-sm font-semibold text-white">{error}</p>
                 </div>
               )}
 
               {/* FIRST + LAST NAME */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="firstName"
-                    className="ml-2 block text-[10px] font-black uppercase tracking-widest text-[#df4473]"
-                  >
-                    First Name
-                  </label>
-
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-4">
+                <Field id="firstName" label="First name">
                   <input
                     id="firstName"
                     type="text"
+                    autoComplete="given-name"
                     value={formData.firstName}
                     onChange={handleInputChange}
-                    placeholder="John"
-                    className="h-12 w-full rounded-2xl border-2 border-white/50 bg-white/50 px-5 text-gray-800 outline-none focus:border-[#df4473] focus:bg-white transition-all shadow-inner"
+                    placeholder="Your first name"
                     disabled={isLoading}
+                    className={`${inputBase} ${inputNeutral}`}
                   />
-                </div>
+                </Field>
 
-                <div className="space-y-1.5">
-                  <label
-                    htmlFor="lastName"
-                    className="ml-2 block text-[10px] font-black uppercase tracking-widest text-[#df4473]"
-                  >
-                    Last Name
-                  </label>
-
+                <Field id="lastName" label="Last name">
                   <input
                     id="lastName"
                     type="text"
+                    autoComplete="family-name"
                     value={formData.lastName}
                     onChange={handleInputChange}
-                    placeholder="Doe"
-                    className="h-12 w-full rounded-2xl border-2 border-white/50 bg-white/50 px-5 text-gray-800 outline-none focus:border-[#df4473] focus:bg-white transition-all shadow-inner"
+                    placeholder="Your last name"
                     disabled={isLoading}
+                    className={`${inputBase} ${inputNeutral}`}
                   />
-                </div>
-
+                </Field>
               </div>
 
               {/* EMAIL */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="email"
-                  className="ml-2 block text-[10px] font-black uppercase tracking-widest text-[#df4473]"
-                >
-                  Email Address
-                </label>
-
+              <Field id="email" label="Email">
                 <input
                   id="email"
                   type="email"
+                  inputMode="email"
+                  autoComplete="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   placeholder="user@example.com"
-                  className="h-12 w-full rounded-2xl border-2 border-white/50 bg-white/50 px-5 text-gray-800 outline-none focus:border-[#df4473] focus:bg-white transition-all shadow-inner"
                   disabled={isLoading}
+                  className={`${inputBase} ${inputNeutral}`}
                 />
-              </div>
+              </Field>
 
               {/* PASSWORD */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="password"
-                  className="ml-2 block text-[10px] font-black uppercase tracking-widest text-[#df4473]"
-                >
-                  Password
-                </label>
-
-                <input
+              <Field id="password" label="Password">
+                <PasswordInput
                   id="password"
-                  type="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  placeholder="Min. 6 characters"
-                  className={`
-                    h-12 w-full rounded-2xl border-2
-                    bg-white/50 px-5 text-gray-800
-                    outline-none transition-all shadow-inner
-                    ${
-                      passwordsDoNotMatch
-                        ? "border-red-400 focus:border-red-500"
-                        : passwordsMatch
-                        ? "border-green-400 focus:border-green-500"
-                        : "border-white/50 focus:border-[#df4473]"
-                    }
-                  `}
+                  placeholder="At least 6 characters"
+                  autoComplete="new-password"
                   disabled={isLoading}
+                  state={matchState}
                 />
-              </div>
+              </Field>
 
               {/* CONFIRM PASSWORD */}
-              <div className="space-y-1.5">
-                <label
-                  htmlFor="confirmPassword"
-                  className="ml-2 block text-[10px] font-black uppercase tracking-widest text-[#df4473]"
-                >
-                  Confirm Password
-                </label>
-
-                <input
+              <Field id="confirmPassword" label="Confirm password">
+                <PasswordInput
                   id="confirmPassword"
-                  type="password"
                   value={formData.confirmPassword}
                   onChange={handleInputChange}
-                  placeholder="Repeat password"
-                  className={`
-                    h-12 w-full rounded-2xl border-2
-                    bg-white/50 px-5 text-gray-800
-                    outline-none transition-all shadow-inner
-                    ${
-                      passwordsDoNotMatch
-                        ? "border-red-400 focus:border-red-500"
-                        : passwordsMatch
-                        ? "border-green-400 focus:border-green-500"
-                        : "border-white/50 focus:border-[#df4473]"
-                    }
-                  `}
+                  placeholder="Repeat your password"
+                  autoComplete="new-password"
                   disabled={isLoading}
+                  state={matchState}
+                  describedBy="confirm-status"
                 />
 
-                <div className="min-h-[16px] px-2">
+                <div id="confirm-status" className="min-h-[1.25rem] px-2 pt-1.5" aria-live="polite">
                   {passwordsDoNotMatch && (
-                    <p className="text-[10px] font-bold text-red-600 uppercase tracking-tighter">
-                      Passwords do not match
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[#ffc46b]">
+                      <AlertTriangle size={14} />
+                      Passwords don&apos;t match
                     </p>
                   )}
-
                   {passwordsMatch && (
-                    <p className="text-[10px] font-bold text-green-600 uppercase tracking-tighter">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[#7ee0b5]">
+                      <Check size={14} />
                       Passwords match
                     </p>
                   )}
                 </div>
-              </div>
+              </Field>
 
-              {/* BUTTON */}
-              <div className="pt-2">
-
+              {/* SUBMIT */}
+              <div className="space-y-5 pt-1">
                 <button
                   type="submit"
-                  disabled={
-                    isLoading || passwordsDoNotMatch
-                  }
-                  className="h-14 w-full rounded-2xl bg-[#df4473] text-lg font-black uppercase tracking-widest text-white shadow-lg shadow-pink-500/30 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:grayscale flex items-center justify-center gap-3"
+                  disabled={isLoading || passwordsDoNotMatch}
+                  className={primaryButton}
                 >
                   {isLoading ? (
                     <>
-                      <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Creating Account
+                      <span
+                        className="h-5 w-5 animate-spin rounded-full border-2 border-[#8a1a42]/30 border-t-[#8a1a42]"
+                        aria-hidden
+                      />
+                      Creating account…
                     </>
                   ) : (
-                    "Get Started"
+                    "Create account"
                   )}
                 </button>
 
-                <p className="mt-6 text-center text-sm font-bold text-gray-500 uppercase tracking-tight">
+                <p className="text-center text-sm text-white/90">
                   Already have an account?{" "}
                   <Link
                     href="/login"
-                    className="text-[#df4473] hover:underline"
+                    className={`rounded font-bold text-white underline underline-offset-4 ${focusRing}`}
                   >
-                    Login
+                    Log in
                   </Link>
                 </p>
-
               </div>
-
             </form>
           </div>
         </section>
-
       </div>
     </main>
   );

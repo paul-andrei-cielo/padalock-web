@@ -22,6 +22,132 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-poppins);;
+  font-family: var(--font-poppins);
 }
 
+/* ==========================================================================
+   Padalock motion
+   - Entrances use animation-fill-mode: backwards, so hover transforms still
+     work after the animation ends.
+   - Everything is switched off for people who prefer reduced motion.
+   ========================================================================== */
+
+:root {
+  --pl-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes pl-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pl-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pl-pop {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pl-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(255, 196, 107, 0.6); }
+  70%  { box-shadow: 0 0 0 14px rgba(255, 196, 107, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 196, 107, 0); }
+}
+
+/* Modal content fades in just after the panel starts growing */
+@keyframes pl-content {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Page, header, panels */
+.pl-fade     { animation: pl-fade 0.4s ease-out backwards; }
+.pl-rise     { animation: pl-rise 0.5s var(--pl-ease) backwards; }
+
+/* Modals, dropdowns, toasts, small chips */
+.pl-backdrop { animation: pl-fade 0.2s ease-out backwards; }
+.pl-pop      { animation: pl-pop 0.28s var(--pl-ease) backwards; }
+.pl-toast    { animation: pl-pop 0.3s var(--pl-ease) backwards; }
+
+/* Modal body (the panel itself is animated from JS, see ModalShell) */
+.pl-modal-body { animation: pl-content 0.3s var(--pl-ease) 0.12s backwards; }
+
+/* Important alerts: pop in, then pulse a few times (not forever) */
+.pl-alert {
+  animation:
+    pl-pop 0.35s var(--pl-ease) backwards,
+    pl-ring 2.2s ease-out 0.5s 3;
+}
+
+/* Delays for the big panels */
+.pl-d1 { animation-delay: 70ms; }
+.pl-d2 { animation-delay: 140ms; }
+.pl-d3 { animation-delay: 210ms; }
+
+/* Staggered lists / grids: children rise in one after another */
+.pl-base-1 { --pl-base: 120ms; }
+.pl-base-2 { --pl-base: 220ms; }
+
+.pl-stagger > * { animation: pl-rise 0.45s var(--pl-ease) backwards; }
+.pl-stagger > *:nth-child(1)     { animation-delay: calc(var(--pl-base, 0ms) + 0ms); }
+.pl-stagger > *:nth-child(2)     { animation-delay: calc(var(--pl-base, 0ms) + 45ms); }
+.pl-stagger > *:nth-child(3)     { animation-delay: calc(var(--pl-base, 0ms) + 90ms); }
+.pl-stagger > *:nth-child(4)     { animation-delay: calc(var(--pl-base, 0ms) + 135ms); }
+.pl-stagger > *:nth-child(5)     { animation-delay: calc(var(--pl-base, 0ms) + 180ms); }
+.pl-stagger > *:nth-child(6)     { animation-delay: calc(var(--pl-base, 0ms) + 225ms); }
+.pl-stagger > *:nth-child(7)     { animation-delay: calc(var(--pl-base, 0ms) + 270ms); }
+.pl-stagger > *:nth-child(8)     { animation-delay: calc(var(--pl-base, 0ms) + 315ms); }
+.pl-stagger > *:nth-child(n + 9) { animation-delay: calc(var(--pl-base, 0ms) + 360ms); }
+
+/* Press feedback for every enabled button. It lives in the base layer so
+   Tailwind's own transition classes still win (Tailwind v4 layers). */
+@layer base {
+  button:not(:disabled) {
+    transition: scale 0.12s var(--pl-ease);
+  }
+  button:not(:disabled):active {
+    scale: 0.97;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-fade,
+  .pl-rise,
+  .pl-backdrop,
+  .pl-pop,
+  .pl-drop,
+  .pl-drop-out,
+  .pl-toast,
+  .pl-alert,
+  .pl-modal-body,
+  .pl-stagger > * {
+    animation: none !important;
+  }
+  button:not(:disabled):active {
+    scale: 1;
+  }
+}
+
+@keyframes pl-drop {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.pl-drop {
+  transform-origin: top right;
+  animation: pl-drop 0.22s var(--pl-ease) backwards;
+}
+
+@keyframes pl-drop-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-8px) scale(0.96); }
+}
+
+.pl-drop-out {
+  transform-origin: top right;
+  animation: pl-drop-out 0.16s ease-in forwards;
+  pointer-events: none;
+}
