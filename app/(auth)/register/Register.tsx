@@ -868,7 +868,7 @@ const filterKeyOf = (status: string): ReturnFilter | null =>
 
 // Statuses where the owner can still generate (or regenerate) an OTP.
 const canGenerateOtp = (r: ReturnRecord) =>
-  ["PENDING", "READY_FOR_PICKUP", "OTP_ACTIVE", "EXPIRED"].includes(r.status);
+  ["READY_FOR_PICKUP", "OTP_ACTIVE", "EXPIRED"].includes(r.status);
 
 const returnItems = (r: ReturnRecord) =>
   r.items && r.items.length > 0 ? r.items : [r.itemDescription || "Parcel"];
@@ -1580,7 +1580,7 @@ function ReturnsSection({
           <form onSubmit={handleCreate} className="flex flex-col lg:min-h-0 lg:flex-1">
             <div className={`space-y-5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1 ${scrollbarClass}`}>
               <ol className={`${glassInner} grid grid-cols-3 gap-2 p-3 text-center`}>
-                {["Put it in your locker", "Register it here", "Give the rider an OTP"].map(
+                {["Register your return", "Place it in your locker", "Give the rider an OTP"].map(
                   (label, i) => (
                     <li key={label} className="flex flex-col items-center gap-1.5">
                       <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8ecbff] text-xs font-bold text-[#0b3a5c]">

@@ -9,7 +9,6 @@ import { randomInt } from "crypto";
 const OTP_VALID_MINUTES = 1440;
 
 const OTP_ELIGIBLE_STATUSES = [
-    "PENDING",
     "READY_FOR_PICKUP",
     "OTP_ACTIVE",
     "EXPIRED"
