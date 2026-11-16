@@ -425,7 +425,7 @@ export default function NotificationsPage() {
     if (!token) return;
     try {
       setRefreshing(true);
-      const res = await fetch("/api/logs", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch("/api/logs?type=notifications", { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) throw new Error("Couldn't load notifications.");
       const data = await res.json();
       const mapped = (Array.isArray(data) ? data : [])

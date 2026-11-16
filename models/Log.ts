@@ -25,6 +25,7 @@ import mongoose, { models } from "mongoose";
         'PIN_RESET',
         'LOCK_OPEN',
         'LOCK_CLOSED',
+        'LID_OPEN_TOO_LONG',
         'DELIVERY_VALID',
         'DELIVERY_SUCCESS',
         'RETRIEVE',

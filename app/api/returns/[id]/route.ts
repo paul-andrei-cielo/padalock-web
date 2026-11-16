@@ -4,11 +4,19 @@ import Return from "@/models/Return";
 import { NextRequest, NextResponse } from "next/server";
 import Log from "@/models/Log";
 import cloudinary from "@/lib/cloudinary";
+import { randomInt } from "crypto";
 
 const OTP_VALID_MINUTES = 1440;
 
+const OTP_ELIGIBLE_STATUSES = [
+    "PENDING",
+    "READY_FOR_PICKUP",
+    "OTP_ACTIVE",
+    "EXPIRED"
+];
+
 function generateOtp(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return randomInt(100000, 1000000).toString();
 }
 
 export async function DELETE(
@@ -245,12 +253,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         if (action === "generate_otp") {
 
-            if (
-                returnDoc.status !== "READY_FOR_PICKUP" &&
-                returnDoc.status !== "OTP_ACTIVE"
-            ) {
+            if (!OTP_ELIGIBLE_STATUSES.includes(returnDoc.status)) {
                 return NextResponse.json({
-                    error: "Return parcel must be deposited in the locker before generating an OTP"
+                    error: "An OTP can't be generated for this return anymore."
                 }, { status: 400 });
             }
 

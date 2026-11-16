@@ -7,6 +7,20 @@ import Return from '@/models/Return';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const NOTIFICATION_ACTIONS = [
+  'DELIVERY_SUCCESS',
+  'RETRIEVE',
+  'RETURN_PICKUP_SUCCESS',
+  'INVALID_CODE',
+  'PIN_LOCKOUT',
+  'LID_OPEN_TOO_LONG',
+];
+
+const RETURN_LOG_ACTIONS = ['RETURN_PICKUP_SUCCESS', 'RETURN_DEPOSITED'];
+
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 500;
+
 export async function GET(request: NextRequest) {
   try {
     await connectDB();
@@ -24,21 +38,32 @@ export async function GET(request: NextRequest) {
       user.id || user.userId
     );
 
-    console.log("Fetching logs for:", userId);
+    const params = request.nextUrl.searchParams;
 
-    const logs = await Log.find({ userId })
-  .sort({ createdAt: -1 })
-  .limit(50)
-  .lean();
+    const query: Record<string, any> = { userId };
+    if (params.get('type') === 'notifications') {
+      query.action = { $in: NOTIFICATION_ACTIONS };
+    }
+
+    const requestedLimit = Number(params.get('limit'));
+    const limit =
+      Number.isInteger(requestedLimit) && requestedLimit > 0
+        ? Math.min(requestedLimit, MAX_LIMIT)
+        : DEFAULT_LIMIT;
+
+    const logs = await Log.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
 
     const enrichedLogs = await Promise.all(
       logs.map(async (log: any) => {
-        if (log.action !== "RETURN_PICKUP_SUCCESS") {
+        if (!RETURN_LOG_ACTIONS.includes(log.action)) {
           return log;
         }
 
         const match = log.details?.match(
-          /Return ([a-fA-F0-9]{24}) picked up/
+          /Return ([a-fA-F0-9]{24}) (?:picked up|deposited in locker)/
         );
 
         if (!match) {

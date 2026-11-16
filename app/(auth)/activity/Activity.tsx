@@ -595,7 +595,7 @@ export default function ActivityPage() {
     try {
       const [parcelsRes, logsRes, lockerRes, returnsRes] = await Promise.all([
         fetch(API_BASE, { headers }),
-        fetch(LOGS_API, { headers }),
+        fetch(`${LOGS_API}?limit=200`, { headers }),
         fetch(LOCKER_API, { headers }).catch(() => null),
         fetch(RETURNS_API, { headers }).catch(() => null),
       ]);
@@ -763,6 +763,7 @@ export default function ActivityPage() {
       PENDING: "Pending",
       READY_FOR_PICKUP: "Ready for pickup",
       OTP_ACTIVE: "OTP active",
+      PICKUP_ACTIVE: "Pickup in progress",
       PICKED_UP: "Picked up",
       EXPIRED: "OTP expired",
       CANCELLED: "Cancelled",
