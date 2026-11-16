@@ -4,6 +4,8 @@ import Parcel from "@/models/Parcel";
 import { NextRequest, NextResponse } from "next/server";
 import Log from "@/models/Log";
 import cloudinary from "@/lib/cloudinary";
+import mongoose from "mongoose";
+import { parseParcelInput } from "@/lib/parcelInput";
 
 export async function DELETE(
   req: NextRequest,
@@ -141,50 +143,69 @@ export async function DELETE(
   }
 }
 
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    try {
-        const { id } = await params;
-        const body = await req.json();
-        
-        await connectDB();
-        const user = getUserFromRequest(req);
-        
-        if (!user?.userId) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
 
-        const { trackingNumber, parcelName } = body;
+    await connectDB();
+    const user = getUserFromRequest(req);
 
-        if (!trackingNumber || typeof trackingNumber !== 'string' || trackingNumber.trim().length === 0) {
-            return NextResponse.json({ 
-                error: "Tracking number is required" 
-            }, { status: 400 });
-        }
-
-        const updatedParcel = await Parcel.findOneAndUpdate(
-            { _id: id, userId: user.userId },
-            { 
-                trackingNumber: trackingNumber.trim(),
-                parcelName: parcelName?.trim() || "Parcel",
-                updatedAt: new Date()
-            },
-            { new: true, runValidators: true }
-        );
-
-        if (!updatedParcel) {
-            return NextResponse.json({ 
-                error: "Parcel not found or doesn't belong to you" 
-            }, { status: 404 });
-        }
-
-        return NextResponse.json({
-            message: "Parcel updated successfully",
-            parcel: updatedParcel
-        });
-    } catch (error: any) {
-        console.error("Update parcel error:", error);
-        return NextResponse.json({ 
-            error: "Failed to update parcel: " + error.message 
-        }, { status: 500 });
+    if (!user?.userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
     }
+
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json(
+        { error: "Invalid parcel ID" },
+        { status: 400 }
+      );
+    }
+
+    const { data, error } = parseParcelInput(body);
+
+    if (error || !data) {
+      return NextResponse.json(
+        { error: error || "Invalid parcel data" },
+        { status: 400 }
+      );
+    }
+
+    const updatedParcel = await Parcel.findOneAndUpdate(
+      { _id: id, userId: user.userId },
+      { $set: data },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedParcel) {
+      return NextResponse.json(
+        { error: "Parcel not found or doesn't belong to you" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      message: "Parcel updated successfully",
+      parcel: updatedParcel
+    });
+  } catch (error: any) {
+    if (error?.code === 11000) {
+      return NextResponse.json(
+        { error: "That tracking number is already registered." },
+        { status: 409 }
+      );
+    }
+
+    console.error("Update parcel error:", error);
+    return NextResponse.json(
+      { error: "Failed to update parcel: " + error.message },
+      { status: 500 }
+    );
+  }
 }

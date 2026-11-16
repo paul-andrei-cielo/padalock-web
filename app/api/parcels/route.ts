@@ -3,6 +3,7 @@ import Parcel from "@/models/Parcel";
 import { NextRequest, NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import Locker from "@/models/Locker";
+import { parseParcelInput } from "@/lib/parcelInput";
 
 export async function GET(req: NextRequest) {
     try {
@@ -51,11 +52,17 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { trackingNumber, parcelName } = await req.json();
+        const { data, error } = parseParcelInput(await req.json());
+
+        if (error || !data) {
+            return NextResponse.json(
+                { error: error || "Invalid parcel data" },
+                { status: 400 }
+            );
+        }
 
         const parcel = await Parcel.create({
-            trackingNumber,
-            parcelName: parcelName || "Parcel",
+            ...data,
             userId: user.userId,
             status: "PENDING",
             deliveryDate: null,
@@ -63,7 +70,19 @@ export async function POST(req: NextRequest) {
         });
 
         return NextResponse.json(parcel);
-    } catch (error) {
-        return NextResponse.json({ error: "Failed to create parcel"}, { status: 500 });
+    } catch (error: any) {
+        if (error?.code === 11000) {
+            return NextResponse.json(
+                { error: "That tracking number is already registered." },
+                { status: 409 }
+            );
+        }
+
+        console.error(error);
+
+        return NextResponse.json(
+            { error: "Failed to create parcel" },
+            { status: 500 }
+        );
     }
 }
